@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enter Subject Details</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #38ef7d, #11998e);
+            color: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start; /* Align content at the top */
+            min-height: 100vh;
+            padding: 20px;
+            box-sizing: border-box;
+            overflow-y: auto; /* Enable only one page scroll */
+        }
+
+        .container {
+            z-index: 2;
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(15px);
+            border-radius: 15px;
+            padding: 30px;
+            width: 100%;
+            max-width: 800px;
+            text-align: center;
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .container h2 {
+            font-size: 1.8rem;
+            margin-bottom: 20px;
+        }
+
+        .container label {
+            font-weight: 600;
+            color: #fff;
+            display: block;
+            margin: 10px 0 5px;
+            text-align: left;
+        }
+
+        .container input, .container select {
+            width: calc(100% - 16px);
+            padding: 8px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border: none;
+            font-size: 1rem;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        button {
+            padding: 10px 20px;
+            background-color: #11998e;
+            border: none;
+            border-radius: 5px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #38ef7d;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Enter Subject Details - SGPA Calculation</h2>
+        <form id="subjectForm" onsubmit="calculateSGPA(event)">
+            <div id="subjectFields"></div>
+            <button type="submit">Calculate SGPA</button>
+        </form>
+        <p id="sgpa-result" style="font-size: 1.5rem; margin-top: 20px;"></p>
+    </div>
+
+    <script>
+        // Retrieve the number of subjects and semester from the URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const numSubjects = parseInt(urlParams.get('numSubjects'));
+        const semester = urlParams.get('semester');
+        const subjectFieldsContainer = document.getElementById('subjectFields');
+
+        // Generate subject fields
+        for (let i = 1; i <= numSubjects; i++) {
+            const subjectField = `
+                <div>
+                    <h3>Subject ${i}</h3>
+                    <label>Subject Name</label>
+                    <input type="text" name="subjectName${i}" placeholder="Enter subject name" required />
+
+                    <label>Subject Type</label>
+                    <select name="subjectType${i}" onchange="toggleCredits(this, ${i})" required>
+                        <option value="" disabled selected>Select subject type</option>
+                        <option value="Objective">Objective</option>
+                        <option value="Descriptive">Descriptive</option>
+                    </select>
+
+                    <label>Subject Credits</label>
+                    <input type="number" name="subjectCredits${i}" placeholder="Enter subject credits" min="1" required />
+
+                    <label>Marks (Out of 100)</label>
+                    <input type="number" name="subjectMarks${i}" placeholder="Enter marks" min="0" max="100" required />
+                </div>
+            `;
+            subjectFieldsContainer.insertAdjacentHTML('beforeend', subjectField);
+        }
+
+        // Toggle credits based on subject type
+        function toggleCredits(selectElement, index) {
+            const creditsInput = document.querySelector(`input[name="subjectCredits${index}"]`);
+            if (selectElement.value === "Objective") {
+                creditsInput.value = 1; // Fixed credits for Objective type
+                creditsInput.disabled = true;
+            } else {
+                creditsInput.value = ''; // Reset for Descriptive type
+                creditsInput.disabled = false;
+            }
+        }
+
+        // SGPA Calculation function
+        function calculateSGPA(event) {
+            event.preventDefault(); // Prevent form submission
+            let totalCredits = 0;
+            let totalGradePoints = 0;
+
+            for (let i = 1; i <= numSubjects; i++) {
+                const credits = parseFloat(document.querySelector(`input[name="subjectCredits${i}"]`).value);
+                const marks = parseFloat(document.querySelector(`input[name="subjectMarks${i}"]`).value);
+
+                let gradePoint = 0;
+                if (marks >= 90) gradePoint = 10;
+                else if (marks >= 80) gradePoint = 9;
+                else if (marks >= 70) gradePoint = 8;
+                else if (marks >= 60) gradePoint = 7;
+                else if (marks >= 50) gradePoint = 6;
+                else if (marks >= 40) gradePoint = 5;
+                else if (marks >= 36) gradePoint = 4;
+                else gradePoint = 0;
+
+                totalGradePoints += gradePoint * credits;
+                totalCredits += credits;
+            }
+
+            const sgpa = totalGradePoints / totalCredits;
+            document.getElementById('sgpa-result').textContent = `Your SGPA for Semester ${semester} is: ${sgpa.toFixed(2)}`;
+        }
+    </script>
+</body>
+</html>

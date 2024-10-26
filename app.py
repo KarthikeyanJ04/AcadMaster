@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, jsonify, render_template, redirect, url_for
 from flask_cors import CORS
 import bcrypt
 import mysql.connector
@@ -34,7 +34,7 @@ def initialize_database():
             cursor.execute("USE user_data")  # Switch to the new database
 
             # Create the users table if it doesn't exist
-            cursor.execute("""
+            cursor.execute(""" 
                 CREATE TABLE IF NOT EXISTS users (
                     id INT AUTO_INCREMENT PRIMARY KEY,
                     name VARCHAR(100),
@@ -115,7 +115,7 @@ def register():
 
         # Hash the password and insert user data
         hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
-        cursor.execute("""
+        cursor.execute(""" 
             INSERT INTO users (name, phone, email, usn, semester, grad_year, password, sgpa, cgpa)
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
         """, (name, phone, email, usn, semester, grad_year, hashed_password, None, None))
@@ -152,7 +152,7 @@ def login():
 
         # Verify password
         if bcrypt.checkpw(password.encode('utf-8'), user['password'].encode('utf-8')):
-            return jsonify({'message': 'Login successful!', 'user': user}), 200
+            return jsonify({'message': 'Login successful!', 'redirect_url': '/student-corner'}), 200
         else:
             return jsonify({'message': 'Invalid password'}), 401
     except Error as e:
@@ -162,6 +162,22 @@ def login():
         if connection:
             cursor.close()
             connection.close()
+
+
+# Route for student corner
+@app.route('/student-corner')
+def student_corner():
+    return render_template('student_corner.html')  # Ensure this file exists
+
+@app.route('/sgpa_calculation', methods=['GET', 'POST'])
+def sgpa_calculation():
+    if request.method == 'POST':
+        semester = request.form['semester']
+        num_subjects = request.form['numSubjects']
+        # Process the data as needed (e.g., calculate SGPA)
+        return f"Semester: {semester}, Number of Subjects: {num_subjects}"  # For testing
+    return render_template('sgpa_calculation.html')
+
 
 
 # API route to update SGPA and CGPA
@@ -204,4 +220,4 @@ def test():
 # Initialize the database and start the Flask app
 if __name__ == '__main__':
     initialize_database()
-    app.run(port=3000)
+    app.run(port=3000, debug=True)  # Enable debug mode

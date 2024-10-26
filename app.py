@@ -76,12 +76,14 @@ def home():
 # Route to render the registration page
 @app.route('/register-page')
 def register_page():
+    print("Accessing register page")
     return render_template('register.html')  # Registration page
 
 
 # Route to render the login page
 @app.route('/login-page')
 def login_page():
+    print("Accessing login page")
     return render_template('login.html')  # Login page
 
 

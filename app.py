@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
 import bcrypt
 import mysql.connector
@@ -67,7 +67,25 @@ def get_db_connection():
     return None
 
 
-# Route to handle user registration
+# Route to render the homepage
+@app.route('/')
+def home():
+    return render_template('index.html')  # Main homepage
+
+
+# Route to render the registration page
+@app.route('/register-page')
+def register_page():
+    return render_template('register.html')  # Registration page
+
+
+# Route to render the login page
+@app.route('/login-page')
+def login_page():
+    return render_template('login.html')  # Login page
+
+
+# API route to handle user registration
 @app.route('/register', methods=['POST'])
 def register():
     data = request.json
@@ -111,7 +129,7 @@ def register():
             connection.close()
 
 
-# Route to handle user login
+# API route to handle user login
 @app.route('/login', methods=['POST'])
 def login():
     data = request.json
@@ -144,7 +162,7 @@ def login():
             connection.close()
 
 
-# Route to update SGPA and CGPA
+# API route to update SGPA and CGPA
 @app.route('/update-sgpa-cgpa', methods=['POST'])
 def update_sgpa_cgpa():
     data = request.json

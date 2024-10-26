@@ -19,6 +19,38 @@
             position: relative;
         }
 
+        /* Bubbles at the side */
+        body::before, body::after {
+            content: '';
+            position: absolute;
+            width: 400px;
+            height: 400px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            z-index: 1;
+            animation: float 6s ease-in-out infinite;
+        }
+
+        body::before {
+            top: 10%;
+            left: 5%;
+        }
+
+        body::after {
+            bottom: 10%;
+            right: 5%;
+            animation-duration: 8s;
+        }
+
+        @keyframes float {
+            0%, 100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-30px);
+            }
+        }
+
         .container {
             z-index: 2;
             background: rgba(255, 255, 255, 0.2);
@@ -28,7 +60,7 @@
             width: 50%;
             text-align: center;
             box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2);
-            overflow: auto;
+            overflow: auto; /* Allow scrolling if needed */
         }
 
         .container h2 {
@@ -78,15 +110,23 @@
 <body>
     <div class="container">
         <h2>SGPA Calculation - Student Corner</h2>
-        <form id="sgpa-form" action="/sgpa_calculation" method="post">
+        <form id="sgpa-form" onsubmit="event.preventDefault(); goToSubjectPage();">
             <label for="semester">Semester</label>
             <input type="number" id="semester" name="semester" placeholder="Enter Semester Number" required />
 
             <label for="numSubjects">Number of Subjects</label>
             <input type="number" id="numSubjects" name="numSubjects" placeholder="Enter Number of Subjects" min="1" required />
             
-            <button type="submit">Next</button>
+            <button type="button" onclick="goToSubjectPage()">Next</button>
         </form>
     </div>
+
+    <script>
+        function goToSubjectPage() {
+            const semester = document.getElementById('semester').value;
+            const numSubjects = document.getElementById('numSubjects').value;
+            window.location.href = `student_subject.html?numSubjects=${numSubjects}&semester=${semester}`;
+        }
+    </script>
 </body>
 </html>

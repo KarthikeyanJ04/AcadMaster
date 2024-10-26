@@ -178,6 +178,12 @@ def sgpa_calculation():
         return f"Semester: {semester}, Number of Subjects: {num_subjects}"  # For testing
     return render_template('sgpa_calculation.html')
 
+@app.route('/student-subject', methods=['GET'])
+def student_subject():
+    num_subjects = request.args.get('numSubjects')
+    semester = request.args.get('semester')
+    return render_template('student_subject.html', num_subjects=num_subjects, semester=semester)
+
 
 
 # API route to update SGPA and CGPA

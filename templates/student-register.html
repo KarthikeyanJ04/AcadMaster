@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Student Registration</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Poppins', sans-serif;
+      background: linear-gradient(135deg, #2c3e50, #34495e, #2c3e50);
+      background-size: 200% 200%;
+      animation: gradientShift 15s ease infinite;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      color: #fff;
+    }
+    
+    .registration-container {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 15px;
+      box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3);
+      padding: 30px;
+      width: 350px;
+      text-align: center;
+      backdrop-filter: blur(15px);
+    }
+    
+    h2 {
+      margin-bottom: 15px;
+      font-size: 1.6rem;
+      letter-spacing: 1.5px;
+    }
+
+    label {
+      display: block;
+      font-weight: 600;
+      color: #fff;
+      margin: 5px 0 3px;
+    }
+
+    input {
+      width: 85%;
+      padding: 8px;
+      margin-bottom: 10px;
+      border-radius: 5px;
+      border: none;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      font-size: 0.9rem;
+      background-color: #e0e0e0; /* Softer grey color for input boxes */
+      color: #333; /* Dark text for better readability */
+    }
+
+    .note {
+      font-size: 0.8rem;
+      color: #fff;
+      margin-bottom: 10px;
+    }
+
+    button {
+      width: 85%;
+      padding: 10px;
+      background-color: #6a82fb;
+      border: none;
+      border-radius: 5px;
+      color: white;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background-color 0.3s ease, transform 0.3s ease;
+    }
+
+    button:hover {
+      background-color: #fc5c7d;
+      transform: scale(1.05);
+    }
+
+    input:focus {
+      outline: none;
+      box-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
+    }
+
+    @keyframes gradientShift {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+  </style>
+</head>
+<body>
+  <div class="registration-container">
+    <h2>Student Registration</h2>
+    <form id="registration-form" onsubmit="handleEmailVerification(event)">
+      <label for="email">Enter your Email (@saividya.ac.in)</label>
+      <input type="email" id="email" name="email" placeholder="Enter your email" required pattern=".+@saividya\.ac\.in" title="Email must end with @saividya.ac.in">
+      <div class="note">An OTP will be sent to your email.</div>
+
+      <label for="otp">Enter OTP</label>
+      <input type="text" id="otp" name="otp" placeholder="Enter 4-digit OTP" required maxlength="4" pattern="\d{4}" title="Please enter a 4-digit OTP">
+
+      <button type="submit">Verify OTP</button>
+    </form>
+  </div>
+
+  <script>
+    function handleEmailVerification(event) {
+      event.preventDefault();
+      const email = document.getElementById('email').value;
+      const otp = document.getElementById('otp').value;
+      // Here you would typically send the email and OTP to your server for verification
+      console.log('Email:', email);
+      console.log('OTP:', otp);
+      alert('Verification successful!');
+    }
+  </script>
+</body>
+</html>

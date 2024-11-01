@@ -11,7 +11,7 @@ CORS(app)
 db_config = {
     'host': 'localhost',
     'user': 'root',  # Replace with your MySQL username
-    'password': 'jaikarthik',  # Replace with your MySQL passwordgi
+    'password': 'jaikarthik',  # Replace with your MySQL password
 }
 
 # Database configuration with the database specified, for use after initialization
@@ -77,7 +77,11 @@ def home():
 @app.route('/register-page')
 def register_page():
     print("Accessing register page")
-    return render_template('register.html')  # Registration page
+    return render_template('register.html')
+
+@app.route('/student-register')
+def student_page():
+    return render_template('student-register.html')
 
 
 # Route to render the login page
@@ -183,7 +187,6 @@ def student_subject():
     num_subjects = request.args.get('numSubjects')
     semester = request.args.get('semester')
     return render_template('student_subject.html', num_subjects=num_subjects, semester=semester)
-
 
 
 # API route to update SGPA and CGPA

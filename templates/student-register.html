@@ -1,119 +1,172 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Student Registration</title>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
-  <style>
-    body {
-      margin: 0;
-      font-family: 'Poppins', sans-serif;
-      background: linear-gradient(135deg, #2c3e50, #34495e, #2c3e50);
-      background-size: 200% 200%;
-      animation: gradientShift 15s ease infinite;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      color: #fff;
-    }
-    
-    .registration-container {
-      background: rgba(255, 255, 255, 0.1);
-      border-radius: 15px;
-      box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3);
-      padding: 30px;
-      width: 350px;
-      text-align: center;
-      backdrop-filter: blur(15px);
-    }
-    
-    h2 {
-      margin-bottom: 15px;
-      font-size: 1.6rem;
-      letter-spacing: 1.5px;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Registration</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e, #2e2e38, #3c3c50);
+            background-size: 400% 400%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            color: #fff;
+            animation: subtleGradientShift 30s ease infinite;
+        }
 
-    label {
-      display: block;
-      font-weight: 600;
-      color: #fff;
-      margin: 5px 0 3px;
-    }
+        @keyframes subtleGradientShift {
+            0% { background: linear-gradient(135deg, #1a1a2e, #2e2e38, #3c3c50); }
+            33% { background: linear-gradient(135deg, #1b1b2f, #2f2f3a, #3e3e52); }
+            66% { background: linear-gradient(135deg, #1c1c30, #31313b, #404054); }
+            100% { background: linear-gradient(135deg, #1a1a2e, #2e2e38, #3c3c50); }
+        }
 
-    input {
-      width: 85%;
-      padding: 8px;
-      margin-bottom: 10px;
-      border-radius: 5px;
-      border: none;
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-      font-size: 0.9rem;
-      background-color: #e0e0e0; /* Softer grey color for input boxes */
-      color: #333; /* Dark text for better readability */
-    }
+        .container {
+            text-align: center;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+        }
 
-    .note {
-      font-size: 0.8rem;
-      color: #fff;
-      margin-bottom: 10px;
-    }
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+        }
 
-    button {
-      width: 85%;
-      padding: 10px;
-      background-color: #6a82fb;
-      border: none;
-      border-radius: 5px;
-      color: white;
-      font-weight: 600;
-      cursor: pointer;
-      transition: background-color 0.3s ease, transform 0.3s ease;
-    }
+        .input-group {
+            margin: 20px 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
 
-    button:hover {
-      background-color: #fc5c7d;
-      transform: scale(1.05);
-    }
+        .email-input {
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px 0 0 5px;
+            width: 250px;
+            height: 45px; /* Set a fixed height */
+            background-color: rgba(255, 255, 255, 0.2);
+            color: #fff;
+            font-size: 1rem;
+        }
 
-    input:focus {
-      outline: none;
-      box-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
-    }
+        .email-suffix {
+            padding: 10px;
+            background-color: #444;
+            border: 1px solid #ccc;
+            border-radius: 0 5px 5px 0;
+            color: #fff;
+            font-weight: bold;
+            height: 45px; /* Set the same fixed height */
+            display: flex;
+            align-items: center; /* Center the text vertically */
+            justify-content: center; /* Center the text horizontally */
+        }
 
-    @keyframes gradientShift {
-      0% { background-position: 0% 50%; }
-      50% { background-position: 100% 50%; }
-      100% { background-position: 0% 50%; }
-    }
-  </style>
+        .otp-container {
+            display: none; /* Initially hidden */
+            margin: 20px 0;
+        }
+
+        .otp-box {
+            width: 45px;
+            height: 45px;
+            margin: 0 5px;
+            font-size: 1.5rem;
+            text-align: center;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            background-color: rgba(255, 255, 255, 0.2);
+            color: #fff;
+        }
+
+        button {
+            padding: 10px 20px;
+            background-color: #fff;
+            border: none;
+            border-radius: 5px;
+            color: #000;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            margin: 10px 0; /* Add some margin to separate buttons */
+            display: block; /* Make button block-level */
+            width: fit-content; /* Fit button to its content */
+            margin-left: auto; /* Center button */
+            margin-right: auto; /* Center button */
+        }
+
+        button:hover {
+            background-color: #000;
+            color: #fff;
+        }
+
+        .otp-message {
+            margin: 10px 0;
+            display: block; /* Show by default */
+        }
+
+        .otp-enter-message {
+            margin: 10px 0;
+            display: none; /* Initially hidden */
+        }
+    </style>
 </head>
 <body>
-  <div class="registration-container">
-    <h2>Student Registration</h2>
-    <form id="registration-form" onsubmit="handleEmailVerification(event)">
-      <label for="email">Enter your Email (@saividya.ac.in)</label>
-      <input type="email" id="email" name="email" placeholder="Enter your email" required pattern=".+@saividya\.ac\.in" title="Email must end with @saividya.ac.in">
-      <div class="note">An OTP will be sent to your email.</div>
+    <div class="container">
+        <h1>Student Registration</h1>
+        <div class="input-group">
+            <input type="text" id="email" class="email-input" placeholder="Enter your partial email" required>
+            <div class="email-suffix">@saividya.ac.in</div>
+        </div>
 
-      <label for="otp">Enter OTP</label>
-      <input type="text" id="otp" name="otp" placeholder="Enter 4-digit OTP" required maxlength="4" pattern="\d{4}" title="Please enter a 4-digit OTP">
+        <span class="otp-message" id="otp-message">OTP will be sent to email</span> <!-- OTP message -->
+        
+        <span class="otp-enter-message" id="otp-enter-message">Enter OTP</span> <!-- Enter OTP message -->
+        
+        <div class="otp-container" id="otp-container">
+            <div class="input-group">
+                <input type="text" class="otp-box" maxlength="1" onkeyup="moveToNext(this, 'otp2')" id="otp1">
+                <input type="text" class="otp-box" maxlength="1" onkeyup="moveToNext(this, 'otp3')" id="otp2">
+                <input type="text" class="otp-box" maxlength="1" onkeyup="moveToNext(this, 'otp4')" id="otp3">
+                <input type="text" class="otp-box" maxlength="1" onkeyup="moveToNext(this, 'otp1')" id="otp4">
+            </div>
+            <button id="register-button" style="display: none; margin-top: 20px;" onclick="submitForm()">Register</button> <!-- Initially hidden -->
+        </div>
 
-      <button type="submit">Verify OTP</button>
-    </form>
-  </div>
+        <button id="send-otp-button" onclick="sendOtp()">Send OTP</button>
+    </div>
 
-  <script>
-    function handleEmailVerification(event) {
-      event.preventDefault();
-      const email = document.getElementById('email').value;
-      const otp = document.getElementById('otp').value;
-      // Here you would typically send the email and OTP to your server for verification
-      console.log('Email:', email);
-      console.log('OTP:', otp);
-      alert('Verification successful!');
-    }
-  </script>
+    <script>
+        function sendOtp() {
+            const emailInput = document.getElementById('email');
+            emailInput.value = emailInput.value + '@saividya.ac.in'; // Set the full email
+            emailInput.setAttribute('readonly', true); // Make input non-editable
+            document.getElementById('otp-container').style.display = 'block'; // Show OTP container
+            document.getElementById('otp-message').style.display = 'none'; // Hide OTP message
+            document.getElementById('otp-enter-message').style.display = 'block'; // Show Enter OTP message
+            document.getElementById('register-button').style.display = 'block'; // Show register button
+            document.getElementById('send-otp-button').style.display = 'none'; // Hide Send OTP button
+        }
+
+        function moveToNext(current, nextId) {
+            if (current.value.length >= 1) {
+                document.getElementById(nextId).focus();
+            }
+        }
+
+        function submitForm() {
+            // Add logic to handle form submission, e.g., send data to the server
+            alert('Form submitted!');
+        }
+    </script>
 </body>
 </html>

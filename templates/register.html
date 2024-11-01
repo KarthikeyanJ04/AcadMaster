@@ -9,18 +9,20 @@
     body {
       margin: 0;
       font-family: 'Poppins', sans-serif;
-      background: linear-gradient(135deg, #84fab0, #8fd3f4);
+      background: linear-gradient(135deg, #09090a, #000000, #050607);
+      background-size: 200% 200%;
+      animation: gradientShift 15s ease infinite;
       display: flex;
       justify-content: center;
       align-items: center;
       height: 100vh;
       color: #fff;
-      position: relative;
     }
+    
     .registration-container {
-      background: rgba(255, 255, 255, 0.2);
+      background: rgba(255, 255, 255, 0.1);
       border-radius: 15px;
-      box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2);
+      box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3);
       padding: 30px;
       width: 350px;
       text-align: center;
@@ -33,13 +35,15 @@
       font-size: 1.6rem;
       letter-spacing: 1.5px;
     }
-    .registration-container label {
+
+    label {
       display: block;
       font-weight: 600;
       color: #fff;
       margin: 5px 0 3px;
     }
-    .registration-container input {
+
+    input {
       width: 85%;
       padding: 8px;
       margin-bottom: 10px;
@@ -47,71 +51,51 @@
       border: none;
       box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
       font-size: 0.9rem;
+      background-color: #242323; /* Softer grey color for input boxes */
+      color: #414141; /* Dark text for better readability */
     }
+
     .password-strength {
       font-size: 0.8rem;
       margin-bottom: 10px;
     }
+
     .weak { color: red; }
     .medium { color: orange; }
     .strong { color: green; }
-    .registration-container button {
+
+    button {
       width: 85%;
+      margin-top: 20px;
+      
       padding: 10px;
-      background-color: #6a82fb;
+      background-color: #ffffff;
       border: none;
       border-radius: 5px;
-      color: white;
+      color: rgb(0, 0, 0);
       font-weight: 600;
       cursor: pointer;
       transition: background-color 0.3s ease, transform 0.3s ease;
     }
-    .registration-container button:hover {
-      background-color: #fc5c7d;
-      transform: scale(1.05);
+
+    button:hover {
+      background-color: #000000;
+      color:#ffffff
     }
-    .registration-container input:focus {
+
+    input:focus {
       outline: none;
       box-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
     }
-    /* Additional creative elements */
-    .circle-bg {
-      position: absolute;
-      width: 250px;
-      height: 250px;
-      background: rgba(255, 255, 255, 0.1);
-      border-radius: 50%;
-      animation: float 6s ease-in-out infinite;
-    }
-    .circle-bg:nth-child(2) {
-      width: 200px;
-      height: 200px;
-      top: 20%;
-      right: 10%;
-      animation-delay: 3s;
-    }
-    .circle-bg:nth-child(3) {
-      width: 150px;
-      height: 150px;
-      top: 40%;
-      left: 15%;
-      animation-delay: 1s;
-    }
-    @keyframes float {
-      0%, 100% {
-        transform: translateY(0);
-      }
-      50% {
-        transform: translateY(-20px);
-      }
+
+    @keyframes gradientShift {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
     }
   </style>
 </head>
 <body>
-  <div class="circle-bg"></div>
-  <div class="circle-bg"></div>
-  <div class="circle-bg"></div>
-
   <div class="registration-container">
     <h2>Register Now</h2>
     <form id="registration-form" onsubmit="handleRegistration(event)">
@@ -147,7 +131,6 @@
   <script>
     const passwordInput = document.getElementById('password');
     const strengthText = document.getElementById('strength-text');
-    const passwordStrength = document.getElementById('password-strength');
 
     passwordInput.addEventListener('input', function() {
       const value = passwordInput.value;
@@ -162,21 +145,12 @@
       }
 
       strengthText.textContent = strength;
-
-      // Change color based on strength
-      if (strength === 'Weak') {
-        strengthText.className = 'weak';
-      } else if (strength === 'Medium') {
-        strengthText.className = 'medium';
-      } else {
-        strengthText.className = 'strong';
-      }
+      strengthText.className = strength.toLowerCase();
     });
 
     async function handleRegistration(event) {
-      event.preventDefault(); // Prevent the default form submission
+      event.preventDefault();
 
-      // Prepare data for registration
       const registrationData = {
         name: document.getElementById('name').value,
         phone: document.getElementById('phone').value,
@@ -188,27 +162,23 @@
       };
 
       try {
-        // Send registration data to server
         const response = await fetch('http://localhost:3000/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(registrationData),
-      });
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(registrationData),
+        });
 
-
-        if (!response.ok) {
-          throw new Error('Network response was not ok ' + response.statusText);
-        }
-
+        if (!response.ok) throw new Error('Network response was not ok ' + response.statusText);
         const result = await response.json();
-        alert(result.message); // Alert success or error message
+        alert(result.message);
+
         if (result.message === 'Registered successfully!') {
-          window.location.href = 'login.html'; // Redirect to login page after successful registration
+          window.location.href = 'login.html';
         }
       } catch (error) {
-        console.error('There was a problem with the registration:', error);
+        console.error('Registration error:', error);
         alert('Registration failed: ' + error.message);
       }
     }

@@ -9,13 +9,31 @@
     body {
       margin: 0;
       font-family: 'Poppins', sans-serif;
-      background: linear-gradient(135deg, #84fab0, #8fd3f4);
+      background: linear-gradient(135deg, #1a1a2e, #2e2e38, #3c3c50);
+      background-size: 400% 400%;
       display: flex;
       justify-content: center;
       align-items: center;
       height: 100vh;
       color: #fff;
+      animation: subtleGradientShift 30s ease infinite; /* Longer duration */
     }
+
+    @keyframes subtleGradientShift {
+      0% {
+        background: linear-gradient(135deg, #1a1a2e, #2e2e38, #3c3c50);
+      }
+      33% {
+        background: linear-gradient(135deg, #1b1b2f, #2f2f3a, #3e3e52);
+      }
+      66% {
+        background: linear-gradient(135deg, #1c1c30, #31313b, #404054);
+      }
+      100% {
+        background: linear-gradient(135deg, #1a1a2e, #2e2e38, #3c3c50);
+      }
+    }
+
     .container {
       text-align: center;
     }
@@ -27,51 +45,53 @@
     .button-group {
       display: flex;
       justify-content: center;
-      gap: 25px; /* Spacing between the main buttons */
+      gap: 25px;
     }
     .button {
       position: relative;
       padding: 15px 30px;
-      background-color: #6a82fb; /* Main button color */
+      background-color: #ffffff;
       border: none;
-      border-radius: 8px;
-      color: white;
+      border-radius: 50px;
+      color: #000;
       font-weight: 600;
       cursor: pointer;
       font-size: 1.2rem;
-      transition: background-color 0.3s ease;
+      transition: all 0.3s ease;
     }
     .button:hover {
-      background-color: #fc5c7d; /* Hover color */
+      background-color: #000;
+      color: #fff;
     }
     .dropdown {
       position: absolute;
       top: 100%;
       left: 50%;
       transform: translateX(-50%);
-      display: none; /* Hide dropdown by default */
+      display: none;
       flex-direction: column;
       align-items: center;
-      margin-top: 2px; /* Space between main button and dropdown */
+      margin-top: 2px;
     }
     .button:hover .dropdown {
-      display: flex; /* Show dropdown on hover */
+      display: flex;
     }
     .dropdown button {
       padding: 10px 20px;
-      background-color: #6a82fb; /* Dropdown button color */
-      color: #fff;
+      background-color: #ffffff;
+      color: #000;
       border: none;
-      border-radius: 5px;
-      width: 100px; /* Fixed width for dropdown buttons */
+      border-radius: 50px;
+      width: 100px;
       font-size: 0.9rem;
       font-weight: 500;
       cursor: pointer;
-      transition: background-color 0.3s ease;
-      margin: 5px 0; /* Spacing between dropdown buttons */
+      transition: all 0.3s ease;
+      margin: 5px 0;
     }
     .dropdown button:hover {
-      background-color: #fc5c7d; /* Dropdown button hover color */
+      background-color: #000;
+      color: #fff;
     }
   </style>
 </head>
@@ -92,6 +112,13 @@
         MNC
         <div class="dropdown">
           <button onclick="window.location.href='/login-page'">Login</button>
+        </div>
+      </div>
+      <div class="button">
+        Faculty
+        <div class="dropdown">
+          <button onclick="window.location.href='/register-page'">Register</button>
+          <button onclick="window.location.href='login-page'">Login</button>
         </div>
       </div>
     </div>

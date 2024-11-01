@@ -9,46 +9,74 @@
         body {
             margin: 0;
             font-family: 'Poppins', sans-serif;
-            background: linear-gradient(135deg, #84fab0, #8fd3f4);
+            background: linear-gradient(135deg, #1b1b1b, #2a2a2a, #3c3c3c, #1e1e1e);
+            background-size: 400% 400%;
+            animation: gradientAnimation 15s ease infinite;
             display: flex;
             justify-content: center;
             align-items: center;
             height: 100vh;
             color: #fff;
         }
+
+        @keyframes gradientAnimation {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
         .login-container {
-            background: rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.1);
             border-radius: 15px;
-            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2);
             padding: 30px;
             width: 350px;
             text-align: center;
-            backdrop-filter: blur(15px);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.5);
+            transition: box-shadow 0.3s ease;
         }
+
+        .login-container:hover {
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+        }
+
         h2 {
             margin-bottom: 15px;
             font-size: 1.6rem;
+            color: #fff;
         }
+
         input {
             width: 80%;
             padding: 10px;
             margin: 10px 0;
-            border-radius: 5px;
+            border-radius: 8px;
             border: none;
+            background-color: #333;
+            color: #fff;
+            font-size: 1rem;
         }
+
+        input::placeholder {
+            color: #bbb;
+        }
+
         button {
             width: 85%;
-            padding: 10px;
-            background-color: #6a82fb;
-            border: none;
-            border-radius: 5px;
-            color: white;
+            padding: 12px;
+            background-color: #fff;
+            color: #000;
             font-weight: 600;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
             cursor: pointer;
-            transition: background-color 0.3s ease;
+            transition: background-color 0.3s ease, color 0.3s ease;
         }
+
         button:hover {
-            background-color: #fc5c7d;
+            background-color: #000;
+            color: #fff;
         }
     </style>
 </head>
@@ -75,9 +103,9 @@
             .then(response => response.json())
             .then(data => {
                 if (data.redirect_url) {
-                    window.location.href = data.redirect_url;  // Redirect to student corner
+                    window.location.href = data.redirect_url;
                 } else {
-                    alert(data.message);  // Show any error messages
+                    alert(data.message);
                 }
             })
             .catch(error => {

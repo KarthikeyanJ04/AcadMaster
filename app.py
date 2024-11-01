@@ -11,7 +11,7 @@ CORS(app)
 db_config = {
     'host': 'localhost',
     'user': 'root',  # Replace with your MySQL username
-    'password': 'jaikarthik',  # Replace with your MySQL password
+    'password': 'jaikarthik',  # Replace with your MySQL passwordgi
 }
 
 # Database configuration with the database specified, for use after initialization

@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload PDF</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        /* Styling similar to previous setup */
+        body { /* Same styling as before */ }
+        .container { /* Same styling as before */ }
+        h1 { /* Same styling as before */ }
+        input[type="file"] { /* Same styling as before */ }
+        button { /* Same styling as before */ }
+        #result-table {
+            margin-top: 20px;
+            width: 100%;
+            color: #fff;
+            border-collapse: collapse;
+        }
+        #result-table th, #result-table td {
+            padding: 10px;
+            border: 1px solid #fff;
+            text-align: left;
+        }
+        #result-table th {
+            background-color: #444;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Upload Student Results PDFs</h1>
+        <form id="pdfForm" enctype="multipart/form-data">
+            <input type="file" name="pdf_files" accept=".pdf" multiple required>
+            <button type="submit">Upload PDFs</button>
+        </form>
+        <table id="result-table" style="display: none;">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>University Seat Number</th>
+                    <th>SGPA</th>
+                </tr>
+            </thead>
+            <tbody id="table-body"></tbody>
+        </table>
+    </div>
+
+    <script>
+        document.getElementById('pdfForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const formData = new FormData();
+            const files = document.querySelector('input[type="file"]').files;
+
+            for (let i = 0; i < files.length; i++) {
+                formData.append('pdf_files', files[i]);
+            }
+
+            const response = await fetch('/process-pdfs', {
+                method: 'POST',
+                body: formData
+            });
+            const data = await response.json();
+            displayResults(data);
+        });
+
+        function displayResults(data) {
+            const tableBody = document.getElementById('table-body');
+            tableBody.innerHTML = '';  // Clear previous results
+
+            data.forEach(item => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${item.student_name || 'N/A'}</td>
+                    <td>${item.university_seat_number || 'N/A'}</td>
+                    <td>${item.sgpa || 'N/A'}</td>
+                `;
+                tableBody.appendChild(row);
+            });
+
+            document.getElementById('result-table').style.display = 'table';
+        }
+    </script>
+</body>
+</html>

@@ -3,18 +3,19 @@ from flask_cors import CORS
 import bcrypt
 import mysql.connector
 from mysql.connector import Error
+import fitz  # PyMuPDF for PDF processing
+import re
 
 app = Flask(__name__)
 CORS(app)
 
-# Initial database configuration without specifying the database
+# Database configuration
 db_config = {
     'host': 'localhost',
-    'user': 'root',  # Replace with your MySQL username
-    'password': 'jaikarthik',  # Replace with your MySQL password
+    'user': 'root',
+    'password': 'jaikarthik'
 }
 
-# Database configuration with the database specified, for use after initialization
 db_config_with_database = db_config.copy()
 db_config_with_database['database'] = 'user_data'
 
@@ -22,7 +23,6 @@ db_config_with_database['database'] = 'user_data'
 # Initialize the database if it doesn't exist
 def initialize_database():
     try:
-        # Connect to MySQL without specifying the database initially
         connection = mysql.connector.connect(
             host=db_config['host'],
             user=db_config['user'],
@@ -31,10 +31,10 @@ def initialize_database():
         if connection.is_connected():
             cursor = connection.cursor()
             cursor.execute("CREATE DATABASE IF NOT EXISTS user_data")
-            cursor.execute("USE user_data")  # Switch to the new database
+            cursor.execute("USE user_data")
 
             # Create the users table if it doesn't exist
-            cursor.execute(""" 
+            cursor.execute("""
                 CREATE TABLE IF NOT EXISTS users (
                     id INT AUTO_INCREMENT PRIMARY KEY,
                     name VARCHAR(100),
@@ -48,6 +48,18 @@ def initialize_database():
                     cgpa FLOAT DEFAULT NULL
                 )
             """)
+
+            # Create the student_details table if it doesn't exist
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS student_details (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    student_name VARCHAR(100),
+                    university_seat_number VARCHAR(20),
+                    subject_code VARCHAR(10),
+                    subject_name VARCHAR(100)
+                )
+            """)
+
             connection.commit()
             print("Database and tables initialized successfully")
         cursor.close()
@@ -67,18 +79,103 @@ def get_db_connection():
     return None
 
 
+# PDF Text Extraction for Specific Fields
+def extract_specific_info_from_pdf(pdf_file):
+    text = ""
+    with fitz.open(stream=pdf_file.read(), filetype="pdf") as pdf:
+        for page in pdf:
+            text += page.get_text()
+
+    # Define regex patterns for each field
+    seat_number_pattern = re.compile(r"University Seat Number\s*:\s*(\S+)")
+    name_pattern = re.compile(r"Student Name\s*:\s*([A-Z\s]+)")
+    subject_pattern = re.compile(
+        r"(\b[A-Z]{3,4}\d{3}\b)\s+([A-Z &]+)\s+\d+\s+\d+\s+(\d+)\s+([PFWAXNE])"
+    )
+
+    # Extract information
+    seat_number = seat_number_pattern.search(text)
+    name = name_pattern.search(text)
+    subjects = subject_pattern.findall(text)
+
+    # Organize data in JSON format
+    extracted_data = {
+        "university_seat_number": seat_number.group(1) if seat_number else None,
+        "student_name": name.group(1).strip() if name else None,
+        "subjects": [
+            {
+                "subject_code": subject[0],
+                "subject_name": subject[1].strip(),
+                "total": subject[2],
+                "result": subject[3]
+            }
+            for subject in subjects
+        ]
+    }
+    return extracted_data
+
+
 # Route to render the homepage
 @app.route('/')
 def home():
-    return render_template('index.html')  # Main homepage
+    return render_template('index.html')
+
+
+@app.route('/upload-pdf', methods=['GET'])
+def upload_pdf_page():
+    return render_template('pdf_upload.html')  # Render the upload page
+
+
+@app.route('/process-pdfs', methods=['POST'])
+def process_pdfs():
+    if 'pdf_files' not in request.files:
+        return jsonify({"message": "No files uploaded"}), 400
+
+    extracted_data = []
+    files = request.files.getlist('pdf_files')
+
+    try:
+        connection = get_db_connection()
+        cursor = connection.cursor()
+
+        for pdf_file in files:
+            data = extract_specific_info_from_pdf(pdf_file)
+            student_name = data.get("student_name")
+            university_seat_number = data.get("university_seat_number")
+            subjects = data.get("subjects")
+
+            # Insert student details into the database
+            for subject in subjects:
+                cursor.execute("""
+                    INSERT INTO student_details (student_name, university_seat_number, subject_code, subject_name)
+                    VALUES (%s, %s, %s, %s)
+                """, (student_name, university_seat_number, subject["subject_code"], subject["subject_name"]))
+            
+            connection.commit()  # Commit changes after all subjects are inserted
+            extracted_data.append({
+                "student_name": student_name,
+                "university_seat_number": university_seat_number,
+                "subjects": subjects
+            })
+
+        return jsonify(extracted_data)
+    
+    except Error as e:
+        return jsonify({"message": f"Error: {e}"}), 500
+    
+    finally:
+        if connection:
+            cursor.close()
+            connection.close()
 
 
 # Route to render the registration page
 @app.route('/register-page')
 def register_page():
-    print("Accessing register page")
     return render_template('register.html')
 
+
+# Route to render the student registration page
 @app.route('/student-register')
 def student_page():
     return render_template('student-register.html')
@@ -87,8 +184,7 @@ def student_page():
 # Route to render the login page
 @app.route('/login-page')
 def login_page():
-    print("Accessing login page")
-    return render_template('login.html')  # Login page
+    return render_template('login.html')
 
 
 # API route to handle user registration
@@ -173,60 +269,8 @@ def login():
 def student_corner():
     return render_template('student_corner.html')  # Ensure this file exists
 
-@app.route('/sgpa_calculation', methods=['GET', 'POST'])
-def sgpa_calculation():
-    if request.method == 'POST':
-        semester = request.form['semester']
-        num_subjects = request.form['numSubjects']
-        # Process the data as needed (e.g., calculate SGPA)
-        return f"Semester: {semester}, Number of Subjects: {num_subjects}"  # For testing
-    return render_template('sgpa_calculation.html')
-
-@app.route('/student-subject', methods=['GET'])
-def student_subject():
-    num_subjects = request.args.get('numSubjects')
-    semester = request.args.get('semester')
-    return render_template('student_subject.html', num_subjects=num_subjects, semester=semester)
-
-
-# API route to update SGPA and CGPA
-@app.route('/update-sgpa-cgpa', methods=['POST'])
-def update_sgpa_cgpa():
-    data = request.json
-    usn = data.get('usn')
-    sgpa = data.get('sgpa')
-    cgpa = data.get('cgpa')
-
-    if not all([usn, sgpa, cgpa]):
-        return jsonify({'message': 'All fields are required'}), 400
-
-    try:
-        connection = get_db_connection()
-        if not connection:
-            return jsonify({'message': 'Database connection failed'}), 500
-        cursor = connection.cursor()
-
-        # Update SGPA and CGPA in the database
-        cursor.execute("UPDATE users SET sgpa = %s, cgpa = %s WHERE usn = %s", (sgpa, cgpa, usn))
-        connection.commit()
-
-        return jsonify({'message': 'SGPA and CGPA updated successfully!'}), 200
-    except Error as e:
-        print(f"Error updating SGPA and CGPA: {e}")
-        return jsonify({'message': 'Internal server error'}), 500
-    finally:
-        if connection:
-            cursor.close()
-            connection.close()
-
-
-# Test route to check if the server is working
-@app.route('/test', methods=['GET'])
-def test():
-    return jsonify({'message': 'Fetch working!'})
-
 
 # Initialize the database and start the Flask app
 if __name__ == '__main__':
     initialize_database()
-    app.run(port=3000, debug=True)  # Enable debug mode
+    app.run(port=3000, debug=True)

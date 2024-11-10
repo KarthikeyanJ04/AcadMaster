@@ -105,6 +105,7 @@ def send_otp(email, otp):
     message.attach(MIMEText(body, "plain"))
 
     try:
+        print(f"Attempting to send OTP to {email}...")
         with smtplib.SMTP(smtp_server, smtp_port) as server:
             server.starttls()
             server.login(sender_email, sender_password)
@@ -279,33 +280,28 @@ def register():
 # API route to handle user login
 @app.route('/login', methods=['POST'])
 def login():
-    data = request.json
-    usn = data.get('usn')
+   
+    data = request.get_json()
+    email = data.get('email')
     password = data.get('password')
 
-    try:
-        connection = get_db_connection()
-        if not connection:
-            return jsonify({'message': 'Database connection failed'}), 500
-        cursor = connection.cursor(dictionary=True)
+    # Validate email format (ends with @saividya.ac.in)
+    if not email.endswith('@saividya.ac.in'):
+        return jsonify({'message': 'Invalid email format.'}), 400
 
-        # Fetch the user from the database
-        cursor.execute("SELECT * FROM users WHERE usn = %s", (usn,))
-        user = cursor.fetchone()
-        if not user:
-            return jsonify({'message': 'User not found'}), 404
+    connection = get_db_connection()
+    cursor = connection.cursor()
 
-        # Verify the password
-        if bcrypt.checkpw(password.encode('utf-8'), user['password'].encode('utf-8')):
-            return jsonify({'message': 'Login successful'}), 200
-        else:
-            return jsonify({'message': 'Invalid password'}), 400
-    except Error as e:
-        return jsonify({'message': f"Error: {e}"}), 500
-    finally:
-        if connection:
-            cursor.close()
-            connection.close()
+    # Check if the email exists in the faculty table and match the password
+    cursor.execute('SELECT * FROM faculty WHERE email = %s AND password = %s', (email, password))
+    faculty_member = cursor.fetchone()
+
+    if faculty_member:
+        # Login successful, return success response
+        return jsonify({'success': True, 'redirect_url': '/pdf_upload.html'})
+    else:
+        # Invalid credentials
+        return jsonify({'success': False, 'message': 'Invalid email or password.'}), 401
 
 
 if __name__ == '__main__':

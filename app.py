@@ -64,6 +64,15 @@ def initialize_database():
                 )
             """)
 
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS faculty (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    name VARCHAR(100),
+                    email VARCHAR(100) UNIQUE,
+                    password VARCHAR(255)
+                )
+            """)
+
             connection.commit()
             print("Database and tables initialized successfully")
         cursor.close()
@@ -302,6 +311,45 @@ def login():
     else:
         # Invalid credentials
         return jsonify({'success': False, 'message': 'Invalid email or password.'}), 401
+    
+@app.route('/register-faculty', methods=['POST'])
+def register_faculty():
+    data = request.json
+    name = data.get('name')
+    email = data.get('email')
+    password = data.get('password')
+
+    if not all([name, email, password]):
+        return jsonify({'message': 'All fields are required'}), 400
+
+    try:
+        connection = get_db_connection()
+        if not connection:
+            return jsonify({'message': 'Database connection failed'}), 500
+        cursor = connection.cursor(dictionary=True)
+
+        # Check if faculty already exists by email
+        cursor.execute("SELECT * FROM faculty WHERE email = %s", (email,))
+        if cursor.fetchone():
+            return jsonify({'message': 'Faculty already registered'}), 409
+
+        # Hash the password and insert faculty data into the table
+        hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+        cursor.execute(""" 
+            INSERT INTO faculty (name, email, password)
+            VALUES (%s, %s, %s)
+        """, (name, email, hashed_password))
+        connection.commit()
+
+        return jsonify({'message': 'Faculty registered successfully!'}), 201
+    except Error as e:
+        print(f"Error during faculty registration: {e}")
+        return jsonify({'message': 'Internal server error'}), 500
+    finally:
+        if connection:
+            cursor.close()
+            connection.close()
+
 
 
 if __name__ == '__main__':

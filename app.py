@@ -5,6 +5,10 @@ import mysql.connector
 from mysql.connector import Error
 import fitz  # PyMuPDF for PDF processing
 import re
+import random
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 
 app = Flask(__name__)
 CORS(app)
@@ -79,40 +83,79 @@ def get_db_connection():
     return None
 
 
-# PDF Text Extraction for Specific Fields
-def extract_specific_info_from_pdf(pdf_file):
-    text = ""
-    with fitz.open(stream=pdf_file.read(), filetype="pdf") as pdf:
-        for page in pdf:
-            text += page.get_text()
+# Send OTP to the user's email
+def send_otp(email, otp):
+    sender_email = "temp88953@gmail.com"  # Your email address
+    sender_password = "temp@123blr"  # Your email password (for example, App Password)
+    recipient_email = email
 
-    # Define regex patterns for each field
-    seat_number_pattern = re.compile(r"University Seat Number\s*:\s*(\S+)")
-    name_pattern = re.compile(r"Student Name\s*:\s*([A-Z\s]+)")
-    subject_pattern = re.compile(
-        r"(\b[A-Z]{3,4}\d{3}\b)\s+([A-Z &]+)\s+\d+\s+\d+\s+(\d+)\s+([PFWAXNE])"
-    )
+    # Email server settings (Gmail example)
+    smtp_server = "smtp.gmail.com"
+    smtp_port = 587
 
-    # Extract information
-    seat_number = seat_number_pattern.search(text)
-    name = name_pattern.search(text)
-    subjects = subject_pattern.findall(text)
+    # Prepare email content
+    subject = "OTP for Student Registration"
+    body = f"Your OTP for registration is: {otp}"
 
-    # Organize data in JSON format
-    extracted_data = {
-        "university_seat_number": seat_number.group(1) if seat_number else None,
-        "student_name": name.group(1).strip() if name else None,
-        "subjects": [
-            {
-                "subject_code": subject[0],
-                "subject_name": subject[1].strip(),
-                "total": subject[2],
-                "result": subject[3]
-            }
-            for subject in subjects
-        ]
-    }
-    return extracted_data
+    # Create the email message
+    message = MIMEMultipart()
+    message["From"] = sender_email
+    message["To"] = recipient_email
+    message["Subject"] = subject
+    message.attach(MIMEText(body, "plain"))
+
+    try:
+        with smtplib.SMTP(smtp_server, smtp_port) as server:
+            server.starttls()
+            server.login(sender_email, sender_password)
+            server.sendmail(sender_email, recipient_email, message.as_string())
+        print(f"OTP sent to {email}")
+    except Exception as e:
+        print(f"Error sending OTP: {e}")
+
+
+# Route to handle OTP request
+@app.route('/send-otp', methods=['POST'])
+def send_otp_route():
+    data = request.json
+    email = data.get('email')
+
+    if not email:
+        return jsonify({'message': 'Email is required'}), 400
+
+    # Validate email to ensure it ends with "@saividya.ac.in"
+    if not re.match(r'^[a-zA-Z0-9_.+-]+@saividya\.ac\.in$', email):
+        return jsonify({'message': 'Invalid email domain. Please use @saividya.ac.in'}), 400
+
+    # Generate a random OTP
+    otp = random.randint(100000, 999999)
+
+    # Send OTP to the provided email
+    send_otp(email, otp)
+
+    # Store OTP in the session or database for verification later
+    global stored_otp
+    stored_otp = otp
+
+    return jsonify({'message': 'OTP sent to your email'}), 200
+
+
+
+# Route to verify the OTP
+@app.route('/verify-otp', methods=['POST'])
+def verify_otp():
+    data = request.json
+    otp = data.get('otp')
+
+    if not otp:
+        return jsonify({'message': 'OTP is required'}), 400
+
+    # Verify the OTP
+    global stored_otp
+    if int(otp) == stored_otp:
+        return jsonify({'message': 'OTP verified successfully'}), 200
+    else:
+        return jsonify({'message': 'Invalid OTP'}), 400
 
 
 # Route to render the homepage
@@ -121,11 +164,13 @@ def home():
     return render_template('index.html')
 
 
+# Route to render the upload PDF page
 @app.route('/upload-pdf', methods=['GET'])
 def upload_pdf_page():
     return render_template('pdf_upload.html')  # Render the upload page
 
 
+# Route to process the uploaded PDFs and extract information
 @app.route('/process-pdfs', methods=['POST'])
 def process_pdfs():
     if 'pdf_files' not in request.files:
@@ -250,27 +295,19 @@ def login():
         if not user:
             return jsonify({'message': 'User not found'}), 404
 
-        # Verify password
+        # Verify the password
         if bcrypt.checkpw(password.encode('utf-8'), user['password'].encode('utf-8')):
-            return jsonify({'message': 'Login successful!', 'redirect_url': '/student-corner'}), 200
+            return jsonify({'message': 'Login successful'}), 200
         else:
-            return jsonify({'message': 'Invalid password'}), 401
+            return jsonify({'message': 'Invalid password'}), 400
     except Error as e:
-        print(f"Error during login: {e}")
-        return jsonify({'message': 'Internal server error'}), 500
+        return jsonify({'message': f"Error: {e}"}), 500
     finally:
         if connection:
             cursor.close()
             connection.close()
 
 
-# Route for student corner
-@app.route('/student-corner')
-def student_corner():
-    return render_template('student_corner.html')  # Ensure this file exists
-
-
-# Initialize the database and start the Flask app
 if __name__ == '__main__':
     initialize_database()
-    app.run(port=3000, debug=True)
+    app.run(debug=True)

@@ -83,29 +83,35 @@
 <body>
     <div class="login-container">
         <h2>Login</h2>
-        <input type="text" id="usn" placeholder="Enter USN" required>
+        <input type="email" id="email" placeholder="Enter Email" required>
         <input type="password" id="password" placeholder="Enter Password" required>
         <button id="login-btn">Login</button>
     </div>
 
     <script>
         document.getElementById('login-btn').addEventListener('click', function() {
-            const usn = document.getElementById('usn').value;
+            const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
+
+            // Check if email ends with @saividya.ac.in
+            if (!email.endsWith('@saividya.ac.in')) {
+                alert("Please enter a valid email address ending with '@saividya.ac.in'");
+                return;
+            }
 
             fetch('/login', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ usn, password })
+                body: JSON.stringify({ email, password })
             })
             .then(response => response.json())
             .then(data => {
                 if (data.redirect_url) {
-                    window.location.href = data.redirect_url;
+                    window.location.href = data.redirect_url;  // Redirect to PDF upload page
                 } else {
-                    alert(data.message);
+                    alert(data.message);  // Show error message
                 }
             })
             .catch(error => {

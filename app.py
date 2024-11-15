@@ -312,9 +312,22 @@ def login():
         # Invalid credentials
         return jsonify({'success': False, 'message': 'Invalid email or password.'}), 401
     
+@app.route('/register__faculty')
+def register__faculty():
+    return render_template('faculty_register.html')
+
+
+
 @app.route('/register-faculty', methods=['POST'])
 def register_faculty():
-    data = request.json
+    # Check if the request data is JSON, then parse it accordingly
+    if request.is_json:
+        data = request.get_json()
+    else:
+        # Attempt to parse as form data as a fallback
+        data = request.form
+
+    # Extract fields from the request data
     name = data.get('name')
     email = data.get('email')
     password = data.get('password')
@@ -328,27 +341,66 @@ def register_faculty():
             return jsonify({'message': 'Database connection failed'}), 500
         cursor = connection.cursor(dictionary=True)
 
-        # Check if faculty already exists by email
-        cursor.execute("SELECT * FROM faculty WHERE email = %s", (email,))
-        if cursor.fetchone():
-            return jsonify({'message': 'Faculty already registered'}), 409
-
-        # Hash the password and insert faculty data into the table
+        # Hash the password before storing it
         hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
-        cursor.execute(""" 
+        
+        # Insert the faculty details into the 'faculty' table
+        cursor.execute("""
             INSERT INTO faculty (name, email, password)
             VALUES (%s, %s, %s)
         """, (name, email, hashed_password))
         connection.commit()
 
         return jsonify({'message': 'Faculty registered successfully!'}), 201
+
     except Error as e:
         print(f"Error during faculty registration: {e}")
         return jsonify({'message': 'Internal server error'}), 500
+
     finally:
         if connection:
             cursor.close()
             connection.close()
+
+
+@app.route('/faculty-login', methods=['POST'])
+def faculty_login_post():
+    email = request.form['email']
+    password = request.form['password'].encode('utf-8')  # Encode the input password
+
+    # Establish connection and query the faculty table
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT password FROM faculty WHERE email = %s", (email,))
+    result = cursor.fetchone()
+    conn.close()
+
+    if result:
+        stored_password = result[0].encode('utf-8')  # Encode stored hash for bcrypt comparison
+        if bcrypt.checkpw(password, stored_password):
+            session['faculty_logged_in'] = True
+            session['faculty_email'] = email
+            flash('Login successful!', 'success')
+            return redirect(url_for('faculty_dashboard'))  # Redirect to faculty dashboard
+        else:
+            flash('Incorrect password. Please try again.', 'danger')
+    else:
+        flash('Email not found. Please check or register first.', 'warning')
+
+    return redirect(url_for('faculty_login'))
+
+# Route for faculty login page
+@app.route('/faculty-login')
+def faculty_login():
+    return render_template('faculty_login.html')
+
+# Example faculty dashboard route (redirected after login)
+@app.route('/faculty-dashboard')
+def faculty_dashboard():
+    if 'faculty_logged_in' not in session:
+        flash('Please log in first.', 'warning')
+        return redirect(url_for('faculty_login'))
+    return render_template('faculty_dashboard.html')  # Render the faculty dashboard page
 
 
 

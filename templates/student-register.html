@@ -147,15 +147,36 @@
 
     <script>
         function sendOtp() {
-            const emailInput = document.getElementById('email');
-            emailInput.value = emailInput.value + '@saividya.ac.in'; // Set the full email
-            emailInput.setAttribute('readonly', true); // Make input non-editable
+    const emailInput = document.getElementById('email');
+    const email = emailInput.value + '@saividya.ac.in'; // Append domain
+    emailInput.setAttribute('readonly', true); // Make input non-editable
+    
+    // Send the email to the backend via a POST request
+    fetch('/send-otp', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ email: email })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.message === 'OTP sent') {
             document.getElementById('otp-container').style.display = 'block'; // Show OTP container
             document.getElementById('otp-message').style.display = 'none'; // Hide OTP message
             document.getElementById('otp-enter-message').style.display = 'block'; // Show Enter OTP message
             document.getElementById('register-button').style.display = 'block'; // Show register button
             document.getElementById('send-otp-button').style.display = 'none'; // Hide Send OTP button
+        } else {
+            alert('Failed to send OTP');
         }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while sending OTP');
+    });
+}
+
 
         function moveToNext(current, nextId) {
             if (current.value.length >= 1) {

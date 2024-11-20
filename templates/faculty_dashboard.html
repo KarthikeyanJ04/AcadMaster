@@ -64,13 +64,10 @@
         #result-table th, #result-table td {
             padding: 10px;
             border: 1px solid #fff;
-            text-align: center;
-            padding-right: 40px;
-            
+            text-align: left;
         }
         #result-table th {
             background-color: #444;
-            padding-right: 40px;
         }
     </style>
 </head>
@@ -95,34 +92,21 @@
 
     <script>
         document.getElementById('pdfForm').addEventListener('submit', async function(e) {
-    e.preventDefault(); // Prevent default form submission
-    const formData = new FormData();
-    const files = document.querySelector('input[type="file"]').files;
+            e.preventDefault();
+            const formData = new FormData();
+            const files = document.querySelector('input[type="file"]').files;
 
-    for (let i = 0; i < files.length; i++) {
-        formData.append('pdf_files', files[i]);
-    }
+            for (let i = 0; i < files.length; i++) {
+                formData.append('pdf_files', files[i]);
+            }
 
-    try {
-        // Make the POST request to upload PDFs
-        const response = await fetch('/process-pdfs', {
-            method: 'POST',
-            body: formData
+            const response = await fetch('/process-pdfs', {
+                method: 'POST',
+                body: formData
+            });
+            const data = await response.json();
+            displayResults(data);
         });
-
-        if (!response.ok) {
-            throw new Error(`Server responded with status ${response.status}`);
-        }
-
-        const data = await response.json();
-        displayResults(data); // Display results in the table
-
-    } catch (error) {
-        // Log error and display user-friendly message
-        console.error('Error uploading PDFs:', error);
-        alert('An error occurred while uploading the PDFs. Please try again.');
-    }
-});
 
         function displayResults(data) {
             const tableBody = document.getElementById('table-body');

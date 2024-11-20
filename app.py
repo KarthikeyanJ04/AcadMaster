@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, render_template, redirect, url_for
+from flask import Flask, request, jsonify, render_template, redirect, url_for, session, flash
 from flask_cors import CORS
 import bcrypt
 import mysql.connector
@@ -9,9 +9,14 @@ import random
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+import pdfplumber
+from PyPDF2 import PdfReader
+
+
 
 app = Flask(__name__)
 CORS(app)
+app.secret_key = 'jaikarthik'
 
 # Database configuration
 db_config = {
@@ -54,16 +59,7 @@ def initialize_database():
             """)
 
             # Create the student_details table if it doesn't exist
-            cursor.execute("""
-                CREATE TABLE IF NOT EXISTS student_details (
-                    id INT AUTO_INCREMENT PRIMARY KEY,
-                    student_name VARCHAR(100),
-                    university_seat_number VARCHAR(20),
-                    subject_code VARCHAR(10),
-                    subject_name VARCHAR(100)
-                )
-            """)
-
+            
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS faculty (
                     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -72,6 +68,16 @@ def initialize_database():
                     password VARCHAR(255)
                 )
             """)
+
+            cursor.execute("""CREATE TABLE IF NOT EXISTS student_details (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            student_name VARCHAR(255) NOT NULL,
+            university_seat_number VARCHAR(20) NOT NULL,
+            subject_code VARCHAR(500) NOT NULL,
+            subject_name VARCHAR(255) NOT NULL,
+            total_marks INT NOT NULL)""")
+
+            
 
             connection.commit()
             print("Database and tables initialized successfully")
@@ -90,6 +96,45 @@ def get_db_connection():
     except Error as e:
         print(f"Error connecting to MySQL: {e}")
     return None
+
+
+
+def extract_specific_info_from_pdf(pdf_file):
+    data = {"Student Name": None, "University Seat Number": None, "subjects": []}
+
+    try:
+        with pdfplumber.open(pdf_file) as pdf:
+            for page in pdf.pages:
+                # Extract all tables on the page
+                tables = page.extract_tables()
+                for table in tables:
+                    # Example: Assume name and USN are in the first table
+                    if len(table[0]) == 2:  # Check if the table has two columns (Name, USN)
+                        for row in table:
+                            if "Student Name" in row[0]:
+                                data["Student Name"] = row[1].strip()
+                            if "University Seat Number" in row[0]:
+                                data["University Seat Number"] = row[1].strip()
+
+                    # Example: Assume subject details are in subsequent tables
+                    elif len(table[0]) >= 3:  # Check if the table has at least 3 columns
+                        for row in table:
+                            # Ensure proper length and valid data format
+                            if len(row) >= 3 and row[0].strip() and row[1].strip() and row[2].strip():
+                                subject_code = row[0].strip()
+                                subject_name = row[1].strip()
+                                total_marks = row[2].strip()
+                                data["subjects"].append({
+                                    "subject_code": subject_code,
+                                    "subject_name": subject_name,
+                                    "total_marks": total_marks
+                                })
+    except Exception as e:
+        print(f"Error extracting data: {e}")
+
+    return data
+
+
 
 
 # Send OTP to the user's email
@@ -195,22 +240,36 @@ def process_pdfs():
 
         for pdf_file in files:
             data = extract_specific_info_from_pdf(pdf_file)
-            student_name = data.get("student_name")
-            university_seat_number = data.get("university_seat_number")
-            subjects = data.get("subjects")
+            student_name = data.get("Student Name")
+            university_seat_number = data.get("University Seat Number")
+            subjects_data = data.get("subjects")  # Assuming you have a list of subjects
 
-            # Insert student details into the database
-            for subject in subjects:
+            # Insert student details into the students table
+            cursor.execute("""
+                INSERT INTO students (student_name, university_seat_number)
+                VALUES (%s, %s)
+            """, (student_name, university_seat_number))
+
+            student_id = cursor.lastrowid  # Get the student_id of the newly inserted student
+
+            # Insert subjects for the student into the subjects table
+            for subject in subjects_data:
+                subject_code = subject.get("subject_code")  # Extract from the PDF
+                subject_name = subject.get("subject_name")  # Extract from the PDF
+                total_marks = subject.get("total_marks", 0)  # Default to 0 if missing
+
+                # Insert each subject in a new row
                 cursor.execute("""
-                    INSERT INTO student_details (student_name, university_seat_number, subject_code, subject_name)
+                    INSERT INTO subjects (student_id, subject_code, subject_name, total_marks)
                     VALUES (%s, %s, %s, %s)
-                """, (student_name, university_seat_number, subject["subject_code"], subject["subject_name"]))
-            
-            connection.commit()  # Commit changes after all subjects are inserted
+                """, (student_id, subject_code, subject_name, total_marks))
+
+            connection.commit()  # Commit changes for this student
+
             extracted_data.append({
                 "student_name": student_name,
                 "university_seat_number": university_seat_number,
-                "subjects": subjects
+                "subjects": subjects_data
             })
 
         return jsonify(extracted_data)
@@ -222,6 +281,7 @@ def process_pdfs():
         if connection:
             cursor.close()
             connection.close()
+
 
 
 # Route to render the registration page

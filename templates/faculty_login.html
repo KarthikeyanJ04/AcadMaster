@@ -5,62 +5,77 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Faculty Login</title>
     <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: Arial, sans-serif;
-        }
         body {
+            margin: 0;
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #1b1b1b, #2a2a2a, #3c3c3c, #1e1e1e);
+            background-size: 400% 400%;
+            animation: gradientAnimation 15s ease infinite;
             display: flex;
             justify-content: center;
             align-items: center;
-            min-height: 100vh;
-            background: linear-gradient(135deg, #2c3e50, #34495e);
-            color: white;
+            height: 100vh;
+            color: #fff;
         }
+
+        @keyframes gradientAnimation {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
         .container {
-            max-width: 400px;
-            width: 100%;
-            padding: 20px;
             background: rgba(255, 255, 255, 0.1);
-            border-radius: 8px;
-            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.2);
+            border-radius: 15px;
+            padding: 30px;
+            width: 350px;
             text-align: center;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.5);
+            transition: box-shadow 0.3s ease;
         }
-        h1 {
-            margin-bottom: 20px;
-            font-size: 1.8rem;
+
+        .container:hover {
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
         }
-        label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: bold;
-            color: #ecf0f1;
-        }
-        input[type="email"], input[type="password"] {
-            width: 100%;
-            padding: 10px;
+
+        h2 {
             margin-bottom: 15px;
-            border-radius: 5px;
+            font-size: 1.6rem;
+            color: #fff;
+        }
+
+        input {
+            width: 80%;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 8px;
             border: none;
+            background-color: #333;
+            color: #fff;
             font-size: 1rem;
-            background-color: #ecf0f1;
-            color: #2c3e50;
         }
+
+        input::placeholder {
+            color: #bbb;
+        }
+
         button {
-            width: 100%;
+            width: 85%;
             padding: 12px;
+            background-color: #fff;
+            color: #000;
+            font-weight: 600;
             border: none;
-            border-radius: 5px;
-            background: #2980b9;
-            color: white;
-            font-size: 1.1rem;
+            border-radius: 8px;
+            font-size: 1rem;
             cursor: pointer;
-            transition: background 0.3s;
+            transition: background-color 0.3s ease, color 0.3s ease;
         }
+
         button:hover {
-            background: #3498db;
+            background-color: #000;
+            color: #fff;
         }
     </style>
 </head>

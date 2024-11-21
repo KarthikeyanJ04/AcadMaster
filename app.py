@@ -77,6 +77,19 @@ def initialize_database():
             subject_name VARCHAR(255) NOT NULL,
             total_marks INT NOT NULL)""")
 
+            cursor.execute("""CREATE TABLE subjects if not exists (subject_id INT AUTO_INCREMENT PRIMARY KEY,
+            student_id INT NOT NULL,
+            subject_code VARCHAR(50) NOT NULL,
+            subject_name VARCHAR(255) NOT NULL,
+            total_marks INT DEFAULT 0,
+            FOREIGN KEY (student_id) REFERENCES students(student_id))""")
+
+
+            cursor.execute("""CREATE TABLE if not exists students (
+            student_id INT AUTO_INCREMENT PRIMARY KEY,
+            student_name VARCHAR(255) NOT NULL,
+            university_seat_number VARCHAR(50) NOT NULL))""")
+
             
 
             connection.commit()

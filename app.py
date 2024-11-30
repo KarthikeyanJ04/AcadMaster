@@ -77,7 +77,7 @@ def initialize_database():
             subject_name VARCHAR(255) NOT NULL,
             total_marks INT NOT NULL)""")
 
-            cursor.execute("""CREATE TABLE subjects if not exists (subject_id INT AUTO_INCREMENT PRIMARY KEY,
+            cursor.execute("""CREATE TABLE IF NOT EXISTS subjects (subject_id INT AUTO_INCREMENT PRIMARY KEY,
             student_id INT NOT NULL,
             subject_code VARCHAR(50) NOT NULL,
             subject_name VARCHAR(255) NOT NULL,
@@ -85,7 +85,7 @@ def initialize_database():
             FOREIGN KEY (student_id) REFERENCES students(student_id))""")
 
 
-            cursor.execute("""CREATE TABLE if not exists students (
+            cursor.execute("""CREATE TABLE IF NOT exists students (
             student_id INT AUTO_INCREMENT PRIMARY KEY,
             student_name VARCHAR(255) NOT NULL,
             university_seat_number VARCHAR(50) NOT NULL))""")
@@ -112,6 +112,7 @@ def get_db_connection():
 
 
 
+# Helper function for extracting specific information from a PDF
 def extract_specific_info_from_pdf(pdf_file):
     data = {"Student Name": None, "University Seat Number": None, "subjects": []}
 
@@ -146,7 +147,6 @@ def extract_specific_info_from_pdf(pdf_file):
         print(f"Error extracting data: {e}")
 
     return data
-
 
 
 
@@ -232,6 +232,7 @@ def home():
     return render_template('index.html')
 
 
+
 # Route to render the upload PDF page
 @app.route('/upload-pdf', methods=['GET'])
 def upload_pdf_page():
@@ -286,14 +287,15 @@ def process_pdfs():
             })
 
         return jsonify(extracted_data)
-    
+
     except Error as e:
         return jsonify({"message": f"Error: {e}"}), 500
-    
+
     finally:
         if connection:
             cursor.close()
             connection.close()
+
 
 
 

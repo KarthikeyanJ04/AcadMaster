@@ -114,10 +114,46 @@ def get_db_connection():
 
 # Helper function for extracting specific information from a PDF
 import pdfplumber
+import pymysql
+
+pymysql.install_as_MySQLdb()
+import MySQLdb
+
+
+
+def get_subject_credits(subject_code):
+    """ Fetch subject credits from the subject_point table using the subject_code """
+    try:
+        # Establish the database connection
+        connection = MySQLdb.connect(
+        host='localhost',  # or '127.0.0.1'
+        user='root',
+        password='jaikarthik',
+        database='user_data'
+        )
+        cursor = connection.cursor()
+
+        # Query to fetch credits for the given subject_code
+        query = "SELECT credits FROM subject_point WHERE subject_code = %s"
+        cursor.execute(query, (subject_code,))
+        result = cursor.fetchone()
+
+        # If subject_code found, return the credits
+        if result:
+            return result[0]
+        else:
+            print(f"Subject code {subject_code} not found in the database.")
+            return 0
+    except Exception as e:
+        print(f"Error fetching subject credits: {e}")
+        return 0
+    finally:
+        cursor.close()
+        connection.close()
 
 def extract_specific_info_from_pdf(pdf_file):
     data = {"Student Name": None, "University Seat Number": None, "subjects": []}
-
+    Total=0
     try:
         with pdfplumber.open(pdf_file) as pdf:
             print("Opened PDF file successfully")
@@ -136,59 +172,66 @@ def extract_specific_info_from_pdf(pdf_file):
                                 data["University Seat Number"] = row[1].strip()
                                 print(f"Extracted University Seat Number: {data['University Seat Number']}")
 
-                    
-                    
                     elif len(table[0]) >= 3:
                         for row in table:
                             if len(row) >= 3 and row[0].strip() and row[1].strip() and row[2].strip():
                                 subject_code = row[0].strip()
                                 subject_name = row[1].strip()
                                 total_marks = row[4].strip()
-                                data["subjects"].append({
-                                    "subject_code": subject_code,
-                                    "subject_name": subject_name,
-                                    "total_marks": total_marks,
 
-                                })
+                                # Fetch the credits for the subject
+                                credits = get_subject_credits(subject_code)
+                                
+                                # Ensure that credits are an integer, and if not, handle gracefully
+                                if not isinstance(credits, int) or credits <= 0:
+                                    print(f"Invalid or missing credits for subject {subject_code}. Skipping.")
+                                    continue
 
+                                # Ensure total_marks is an integer
                                 try:
                                     total_marks_int = int(total_marks)
-                                    if 0 <= total_marks_int <=9:
-                                        grader=1
-                                    elif 10 <= total_marks_int <= 19:
-                                        grader = 2
-                                    elif 20 <= total_marks_int <= 29:
-                                        grader = 3
-                                    elif 30 <= total_marks_int <= 39:
-                                        grader = 4
-                                    elif 40 <= total_marks_int <= 49:
-                                        grader = 5
-                                    
-
-                                    
-                                    elif 50 <= total_marks_int <= 59:
+                                    if 51 <= total_marks_int <= 60:
                                         grader = 6
-                                    elif 60 <= total_marks_int <= 69:
+                                    elif 61 <= total_marks_int <= 70:
                                         grader = 7
-                                    elif 70 <= total_marks_int <= 79:
+                                    elif 71 <= total_marks_int <= 80:
                                         grader = 8
-                                    elif 80 <= total_marks_int <= 89:
+                                    elif 81 <= total_marks_int <= 90:
                                         grader = 9
-                                    elif 90 <= total_marks_int <= 100:
+                                    elif 91 <= total_marks_int <= 100:
                                         grader = 10
                                     else:
                                         grader = None  # Marks out of range or invalid
                                 except ValueError:
-                                    grader = None
-                                print(f"Extracted subject - Code: {subject_code}, Name: {subject_name}, Marks: {total_marks}, Grader: {grader}")
+                                    grader = None  # In case total_marks is not a valid number
+
+                                # If grader is valid, multiply by credits
+                                if grader is not None:
+                                    total_points = grader * credits
+                                    data["subjects"].append({
+                                        "subject_code": subject_code,
+                                        "subject_name": subject_name,
+                                        "total_marks": total_marks,
+                                        "grader": grader,
+                                        "credits": credits,
+                                        "total_points": total_points
+                                    })
+                                    print(f"Extracted subject - Code: {subject_code}, Name: {subject_name}, Marks: {total_marks}, Grader: {grader}, Credits: {credits}, Total Points: {total_points}")
+
+                                    Total=Total+total_points
+                                    
+                                else:
+                                    print(f"Invalid grader for subject {subject_code}. Skipping.")
     except Exception as e:
         print(f"Error extracting data: {e}")
 
-    
-    
-    
     print("Extraction complete")
+    print("Total points:", Total)
+    print(get_subject_credits('Total'))
+    SGPA=Total/get_subject_credits('Total')
+    print("SGPA:",SGPA)
     return data
+
     
 
 

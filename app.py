@@ -650,6 +650,45 @@ def faculty_login_post():
 def faculty_login():
     return render_template('faculty_login.html')
 
+@app.route('/placement-faculty-login', methods=['POST'])
+def placement_faculty_login_post():
+    email = request.form['email']
+    password = request.form['password'].encode('utf-8')  # Encode the input password
+
+    # Establish connection and query the faculty table
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT password FROM placement WHERE email = %s", (email,))
+    result = cursor.fetchone()
+    conn.close()
+
+    if result:
+        stored_password = result[0].encode('utf-8')  # Encode stored hash for bcrypt comparison
+        if bcrypt.checkpw(password, stored_password):
+            session['placement_faculty_logged_in'] = True
+            session['placement_faculty_email'] = email
+            flash('Login successful!', 'success')
+            return redirect(url_for('placement_faculty_dashboard'))  # Redirect to faculty dashboard
+        else:
+            flash('Incorrect password. Please try again.', 'danger')
+    else:
+        flash('Email not found. Please check or register first.', 'warning')
+
+    return redirect(url_for('faculty_login'))
+
+# Route for faculty login page
+@app.route('/placement-faculty-login')
+def placement_faculty_login():
+    return render_template('placement_login.html')
+
+@app.route('/placement-faculty-dashboard')
+def placement_faculty_dashboard():
+    
+    if 'placement_faculty_logged_in' not in session:
+        flash('Please log in first.', 'warning')
+        return redirect(url_for('placement_faculty_login'))
+    return render_template('placement_faculty_dashboard.html')
+
 # Example faculty dashboard route (redirected after login)
 @app.route('/faculty-dashboard')
 def faculty_dashboard():

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Upload PDF</title>
+    <title>Upload Student Results PDFs</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
     <style>
         body {
@@ -49,28 +49,41 @@
             cursor: pointer;
             font-size: 1rem;
             transition: all 0.3s ease;
-            margin: 10px 0; /* Add some margin to separate buttons */
-            display: block; /* Make button block-level */
-            width: fit-content; /* Fit button to its content */
-            margin-left: auto; /* Center button */
-            margin-right: auto; /* Center button */
+            margin: 10px 0;
+            display: block;
+            width: fit-content;
+            margin-left: auto;
+            margin-right: auto;
         }
 
         button:hover {
             background-color: #000;
             color: #fff;
         }
+
+        input[type="file"] {
+            display: none; /* Hide the default file input */
+        }
+
         #result-table {
             margin-left: auto;
             margin-right: auto;
+            margin-top: 20px;
+            display: none; /* Initially hidden */
         }
+
         #result-table th, #result-table td {
             padding: 10px;
             border: 1px solid #fff;
-            text-align: ;
+            text-align: center;
         }
+
         #result-table th {
             background-color: #444;
+        }
+
+        #export-btn {
+            display: none; /* Initially hidden */
         }
     </style>
 </head>
@@ -78,10 +91,18 @@
     <div class="container">
         <h1>Upload Student Results PDFs</h1>
         <form id="pdfForm" enctype="multipart/form-data">
-            <input type="file" name="pdf_files" accept=".pdf" multiple required>
+            <!-- Only this "Choose Files" button will work -->
+            <button type="button" id="select-files-btn">Choose Files</button>
+            <input type="file" name="pdf_files" accept=".pdf" multiple required id="file-input">
             <button type="submit">Upload PDFs</button>
+            <p id="file-count">No files selected</p>
         </form>
-        <table id="result-table" style="display: none;">
+
+        <!-- Export Button -->
+        <button id="export-btn">Export as CSV</button>
+
+        <!-- Results Table -->
+        <table id="result-table">
             <thead>
                 <tr>
                     <th>Name</th>
@@ -94,6 +115,20 @@
     </div>
 
     <script>
+        // Trigger file input when custom "Choose Files" button is clicked
+        document.getElementById('select-files-btn').addEventListener('click', function() {
+            // Open the hidden file input dialog
+            document.getElementById('file-input').click();
+        });
+
+        // Display selected files
+        document.getElementById('file-input').addEventListener('change', function() {
+            const files = document.getElementById('file-input').files;
+            if (files.length > 0) {
+                console.log(`Selected files: ${files.length}`);
+            }
+        });
+
         document.getElementById('pdfForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             const formData = new FormData();
@@ -125,8 +160,43 @@
                 tableBody.appendChild(row);
             });
 
+            // Show the results table
             document.getElementById('result-table').style.display = 'table';
+            document.getElementById('export-btn').style.display = 'inline-block'; // Show the export button
         }
+
+        document.getElementById('export-btn').addEventListener('click', function() {
+    const table = document.getElementById('result-table');
+    const rows = Array.from(table.querySelectorAll('tr'));
+    
+    // Skip the first row (header row) while generating CSV content
+    let csvContent = 'Name,University Seat Number,SGPA\n';
+
+    // Start from the second row (index 1) to skip the header row
+    rows.slice(1).forEach(row => {
+        const cols = Array.from(row.querySelectorAll('td'))
+            .map(col => col.innerText.trim())
+            .join(',');
+        csvContent += cols + '\n';
+    });
+
+    // Generate the CSV and trigger the download
+    const encodedUri = encodeURI('data:text/csv;charset=utf-8,' + csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', 'student_results.csv');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+});
+
+document.querySelector('input[type="file"]').addEventListener('change', function() {
+    const fileCount = this.files.length;
+    const fileCountText = fileCount === 0 ? 'No files selected' : `${fileCount} file(s) selected`;
+    document.getElementById('file-count').textContent = fileCountText;
+});
+
+        
     </script>
 </body>
 </html>

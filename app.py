@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, render_template, redirect, url_for, session, flash
+from flask import Flask, request, jsonify, render_template, redirect, url_for, session, flash, Response
 from flask_cors import CORS
 import bcrypt
 import mysql.connector
@@ -556,10 +556,37 @@ def faculty_login():
 # Example faculty dashboard route (redirected after login)
 @app.route('/faculty-dashboard')
 def faculty_dashboard():
+    
     if 'faculty_logged_in' not in session:
         flash('Please log in first.', 'warning')
         return redirect(url_for('faculty_login'))
     return render_template('faculty_dashboard.html')  # Render the faculty dashboard page
+
+@app.route('/export_sgpa_csv', methods=['GET'])
+def export_sgpa_csv():
+    # Connect to the database
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    # Query to select SGPA data
+    cursor.execute("SELECT USN, student_name, SGPA FROM students_sgpa")
+    rows = cursor.fetchall()
+
+    # Prepare the CSV file
+    def generate():
+        # Write header to CSV
+        yield 'USN,Student Name,SGPA\n'
+        
+        # Write data rows
+        for row in rows:
+            yield f'{row[0]},{row[1]},{row[2]}\n'
+
+    # Close the database connection
+    cursor.close()
+    conn.close()
+
+    # Set the appropriate header for CSV file download
+    return Response(generate(), mimetype='text/csv', headers={'Content-Disposition': 'attachment;filename=sgpa_data.csv'})
 
 
 

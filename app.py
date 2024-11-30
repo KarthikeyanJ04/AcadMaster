@@ -71,6 +71,15 @@ def initialize_database():
                 )
             """)
 
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS placement (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    name VARCHAR(100),
+                    email VARCHAR(100) UNIQUE,
+                    password VARCHAR(255)
+                )
+            """)
+
             cursor.execute("""CREATE TABLE IF NOT EXISTS student_details (
             id INT AUTO_INCREMENT PRIMARY KEY,
             student_name VARCHAR(255) NOT NULL,
@@ -515,6 +524,10 @@ def login():
 def register__faculty():
     return render_template('faculty_register.html')
 
+@app.route('/register__placement')
+def register__placement():
+    return render_template('placement_register.html')
+
 
 
 @app.route('/register-faculty', methods=['POST'])
@@ -554,6 +567,50 @@ def register_faculty():
 
     except Error as e:
         print(f"Error during faculty registration: {e}")
+        return jsonify({'message': 'Internal server error'}), 500
+
+    finally:
+        if connection:
+            cursor.close()
+            connection.close()
+
+@app.route('/register-placement', methods=['POST'])
+def register_placement():
+    # Check if the request data is JSON, then parse it accordingly
+    if request.is_json:
+        data = request.get_json()
+    else:
+        # Attempt to parse as form data as a fallback
+        data = request.form
+
+    # Extract fields from the request data
+    name = data.get('name')
+    email = data.get('email')
+    password = data.get('password')
+
+    if not all([name, email, password]):
+        return jsonify({'message': 'All fields are required'}), 400
+
+    try:
+        connection = get_db_connection()
+        if not connection:
+            return jsonify({'message': 'Database connection failed'}), 500
+        cursor = connection.cursor(dictionary=True)
+
+        # Hash the password before storing it
+        hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+        
+        # Insert the faculty details into the 'faculty' table
+        cursor.execute("""
+            INSERT INTO placement (name, email, password)
+            VALUES (%s, %s, %s)
+        """, (name, email, hashed_password))
+        connection.commit()
+
+        return jsonify({'message': 'Placement Faculty registered successfully!'}), 201
+
+    except Error as e:
+        print(f"Error during placement faculty registration: {e}")
         return jsonify({'message': 'Internal server error'}), 500
 
     finally:

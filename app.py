@@ -136,6 +136,8 @@ def extract_specific_info_from_pdf(pdf_file):
                                 data["University Seat Number"] = row[1].strip()
                                 print(f"Extracted University Seat Number: {data['University Seat Number']}")
 
+                    
+                    
                     elif len(table[0]) >= 3:
                         for row in table:
                             if len(row) >= 3 and row[0].strip() and row[1].strip() and row[2].strip():
@@ -145,9 +147,40 @@ def extract_specific_info_from_pdf(pdf_file):
                                 data["subjects"].append({
                                     "subject_code": subject_code,
                                     "subject_name": subject_name,
-                                    "total_marks": total_marks
+                                    "total_marks": total_marks,
+
                                 })
-                                print(f"Extracted subject - Code: {subject_code}, Name: {subject_name}, Marks: {total_marks}")
+
+                                try:
+                                    total_marks_int = int(total_marks)
+                                    if 0 <= total_marks_int <=9:
+                                        grader=1
+                                    elif 10 <= total_marks_int <= 19:
+                                        grader = 2
+                                    elif 20 <= total_marks_int <= 29:
+                                        grader = 3
+                                    elif 30 <= total_marks_int <= 39:
+                                        grader = 4
+                                    elif 40 <= total_marks_int <= 49:
+                                        grader = 5
+                                    
+
+                                    
+                                    elif 50 <= total_marks_int <= 59:
+                                        grader = 6
+                                    elif 60 <= total_marks_int <= 69:
+                                        grader = 7
+                                    elif 70 <= total_marks_int <= 79:
+                                        grader = 8
+                                    elif 80 <= total_marks_int <= 89:
+                                        grader = 9
+                                    elif 90 <= total_marks_int <= 100:
+                                        grader = 10
+                                    else:
+                                        grader = None  # Marks out of range or invalid
+                                except ValueError:
+                                    grader = None
+                                print(f"Extracted subject - Code: {subject_code}, Name: {subject_name}, Marks: {total_marks}, Grader: {grader}")
     except Exception as e:
         print(f"Error extracting data: {e}")
 

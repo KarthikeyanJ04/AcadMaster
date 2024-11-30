@@ -113,40 +113,50 @@ def get_db_connection():
 
 
 # Helper function for extracting specific information from a PDF
+import pdfplumber
+
 def extract_specific_info_from_pdf(pdf_file):
     data = {"Student Name": None, "University Seat Number": None, "subjects": []}
 
     try:
         with pdfplumber.open(pdf_file) as pdf:
-            for page in pdf.pages:
-                # Extract all tables on the page
+            print("Opened PDF file successfully")
+            for page_number, page in enumerate(pdf.pages, start=1):
+                print(f"Processing page {page_number}")
                 tables = page.extract_tables()
-                for table in tables:
-                    # Example: Assume name and USN are in the first table
-                    if len(table[0]) == 2:  # Check if the table has two columns (Name, USN)
+                for table_number, table in enumerate(tables, start=1):
+                    print(f"Processing table {table_number} on page {page_number}")
+
+                    if len(table[0]) == 2:
                         for row in table:
                             if "Student Name" in row[0]:
                                 data["Student Name"] = row[1].strip()
+                                print(f"Extracted Student Name: {data['Student Name']}")
                             if "University Seat Number" in row[0]:
                                 data["University Seat Number"] = row[1].strip()
+                                print(f"Extracted University Seat Number: {data['University Seat Number']}")
 
-                    # Example: Assume subject details are in subsequent tables
-                    elif len(table[0]) >= 3:  # Check if the table has at least 3 columns
+                    elif len(table[0]) >= 3:
                         for row in table:
-                            # Ensure proper length and valid data format
                             if len(row) >= 3 and row[0].strip() and row[1].strip() and row[2].strip():
                                 subject_code = row[0].strip()
                                 subject_name = row[1].strip()
-                                total_marks = row[2].strip()
+                                total_marks = row[4].strip()
                                 data["subjects"].append({
                                     "subject_code": subject_code,
                                     "subject_name": subject_name,
                                     "total_marks": total_marks
                                 })
+                                print(f"Extracted subject - Code: {subject_code}, Name: {subject_name}, Marks: {total_marks}")
     except Exception as e:
         print(f"Error extracting data: {e}")
 
+    
+    
+    
+    print("Extraction complete")
     return data
+    
 
 
 

@@ -4,10 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Faculty Login</title>
-<<<<<<< HEAD
-=======
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
->>>>>>> 3f6f5031ea33cf113a55b7bf4d16bc96c19bdfc2
     <style>
         body {
             margin: 0;
@@ -28,11 +24,7 @@
             100% { background-position: 0% 50%; }
         }
 
-<<<<<<< HEAD
         .container {
-=======
-        .login-container {
->>>>>>> 3f6f5031ea33cf113a55b7bf4d16bc96c19bdfc2
             background: rgba(255, 255, 255, 0.1);
             border-radius: 15px;
             padding: 30px;
@@ -43,11 +35,7 @@
             transition: box-shadow 0.3s ease;
         }
 
-<<<<<<< HEAD
         .container:hover {
-=======
-        .login-container:hover {
->>>>>>> 3f6f5031ea33cf113a55b7bf4d16bc96c19bdfc2
             box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
         }
 
@@ -92,7 +80,6 @@
     </style>
 </head>
 <body>
-<<<<<<< HEAD
     <div class="container">
         <h1>Faculty Login</h1>
         <form action="/faculty-login" method="POST">
@@ -105,39 +92,5 @@
             <button type="submit">Login</button>
         </form>
     </div>
-=======
-    <div class="login-container">
-        <h2>Faculty Login</h2>
-        <input type="text" id="employee-id" placeholder="Enter Employee ID" required>
-        <input type="password" id="password" placeholder="Enter Password" required>
-        <button id="login-btn">Login</button>
-    </div>
-
-    <script>
-        document.getElementById('login-btn').addEventListener('click', function() {
-            const employeeID = document.getElementById('employee-id').value;
-            const password = document.getElementById('password').value;
-
-            fetch('/faculty-login', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ employeeID, password })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    window.location.href = 'student-corner.html';
-                } else {
-                    alert(data.message);
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-            });
-        });
-    </script>
->>>>>>> 3f6f5031ea33cf113a55b7bf4d16bc96c19bdfc2
 </body>
 </html>

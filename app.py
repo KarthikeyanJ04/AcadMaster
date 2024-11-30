@@ -21,8 +21,8 @@ app.secret_key = 'jaikarthik'
 # Database configuration
 db_config = {
     'host': 'localhost',
-    'user': 'root',  # Replace with your MySQL username
-    'password': 'Root@nur1n24',  # Replace with your MySQL password
+    'user': 'root',
+    'password': 'jaikarthik'
 }
 
 db_config_with_database = db_config.copy()

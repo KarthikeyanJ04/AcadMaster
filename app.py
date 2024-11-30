@@ -92,12 +92,52 @@ def initialize_database():
             student_name VARCHAR(255) NOT NULL,
             SGPA FLOAT)""")
 
+            create_table_query = """
+            CREATE TABLE IF NOT EXISTS subject_point (
+            subject_code VARCHAR(10) PRIMARY KEY,
+            credits INT
+            );
+            """
+
+            # Insert data query
+            insert_data_query = """
+            INSERT INTO subject_point (subject_code, credits)
+            VALUES
+                ('BBOC407', 2),
+                ('BCS401', 3),
+                ('BCS402', 4),
+                ('BCS403', 4),
+                ('BCS404', 1),
+                ('BCS405A', 3),
+                ('BCS405B', 3),
+                ('BCS405C', 3),
+                ('BCS405D', 3),
+                ('BCS456A', 1),
+                ('BCS456B', 1),
+                ('BCS456C', 1),
+                ('BCS456D', 1),
+                ('BCSL404', 1),
+                ('BUHK408', 1);
+            """
+
+            try:
+                # Execute the create table query
+                cursor.execute(create_table_query)
+                print("Table 'subject_point' created successfully.")
+
+                # Execute the insert data query
+                cursor.execute(insert_data_query)
+                print("Data inserted into 'subject_point' table successfully.")
+
             
 
-            connection.commit()
-            print("Database and tables initialized successfully")
-        cursor.close()
-        connection.close()
+                connection.commit()
+                print("Database and tables initialized successfully")
+
+            except MySQLdb.Error as e:
+                # Rollback in case of error
+                print(f"Error occurred: {e}")
+                db.rollback()   
     except Error as e:
         print(f"Error initializing database: {e}")
 
@@ -231,7 +271,7 @@ def extract_specific_info_from_pdf(pdf_file):
 
     print("Extraction complete")
     print("Total points:", Total)
-    print(get_subject_credits('Total'))
+    
     SGPA = Total / credit
     SGPA = round(SGPA, 2)
     print("SGPA:", SGPA)

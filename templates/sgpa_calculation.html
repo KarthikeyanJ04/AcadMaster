@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SGPA Calculation</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #38ef7d, #11998e);
+            color: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Bubbles at the side */
+        body::before, body::after {
+            content: '';
+            position: absolute;
+            width: 400px;
+            height: 400px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            z-index: 1;
+            animation: float 6s ease-in-out infinite;
+        }
+
+        body::before {
+            top: 10%;
+            left: 5%;
+        }
+
+        body::after {
+            bottom: 10%;
+            right: 5%;
+            animation-duration: 8s;
+        }
+
+        @keyframes float {
+            0%, 100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-30px);
+            }
+        }
+
+        .container {
+            z-index: 2;
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(15px);
+            border-radius: 15px;
+            padding: 30px;
+            width: 50%;
+            text-align: center;
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2);
+            overflow: auto; /* Allow scrolling if needed */
+        }
+
+        .container h2 {
+            font-size: 1.8rem;
+            margin-bottom: 20px;
+        }
+
+        .container label {
+            font-weight: 600;
+            color: #fff;
+            display: block;
+            margin: 10px 0 5px;
+            text-align: left;
+        }
+
+        .container input {
+            width: calc(100% - 16px);
+            padding: 8px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border: none;
+            font-size: 1rem;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        button {
+            padding: 10px 20px;
+            background-color: #11998e;
+            border: none;
+            border-radius: 5px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #38ef7d;
+        }
+
+        input:focus {
+            outline: none;
+            box-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>SGPA Calculation - Student Corner</h2>
+        <form id="sgpa-form" onsubmit="event.preventDefault(); goToSubjectPage();">
+            <label for="semester">Semester</label>
+            <input type="number" id="semester" name="semester" placeholder="Enter Semester Number" required />
+
+            <label for="numSubjects">Number of Subjects</label>
+            <input type="number" id="numSubjects" name="numSubjects" placeholder="Enter Number of Subjects" min="1" required />
+            
+            <button type="button" onclick="goToSubjectPage()">Next</button>
+        </form>
+    </div>
+
+    <script>
+        function goToSubjectPage() {
+            const semester = document.getElementById('semester').value;
+            const numSubjects = document.getElementById('numSubjects').value;
+            window.location.href = `student_subject.html?numSubjects=${numSubjects}&semester=${semester}`;
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Registration</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e, #2e2e38, #3c3c50);
+            background-size: 400% 400%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            color: #fff;
+            animation: subtleGradientShift 30s ease infinite;
+        }
+
+        @keyframes subtleGradientShift {
+            0% { background: linear-gradient(135deg, #1a1a2e, #2e2e38, #3c3c50); }
+            33% { background: linear-gradient(135deg, #1b1b2f, #2f2f3a, #3e3e52); }
+            66% { background: linear-gradient(135deg, #1c1c30, #31313b, #404054); }
+            100% { background: linear-gradient(135deg, #1a1a2e, #2e2e38, #3c3c50); }
+        }
+
+        .container {
+            text-align: center;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+        }
+
+        .input-group {
+            margin: 20px 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .email-input {
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px 0 0 5px;
+            width: 250px;
+            height: 45px; /* Set a fixed height */
+            background-color: rgba(255, 255, 255, 0.2);
+            color: #fff;
+            font-size: 1rem;
+        }
+
+        .email-suffix {
+            padding: 10px;
+            background-color: #444;
+            border: 1px solid #ccc;
+            border-radius: 0 5px 5px 0;
+            color: #fff;
+            font-weight: bold;
+            height: 45px; /* Set the same fixed height */
+            display: flex;
+            align-items: center; /* Center the text vertically */
+            justify-content: center; /* Center the text horizontally */
+        }
+
+        .otp-container {
+            display: none; /* Initially hidden */
+            margin: 20px 0;
+        }
+
+        .otp-box {
+            width: 45px;
+            height: 45px;
+            margin: 0 5px;
+            font-size: 1.5rem;
+            text-align: center;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            background-color: rgba(255, 255, 255, 0.2);
+            color: #fff;
+        }
+
+        button {
+            padding: 10px 20px;
+            background-color: #fff;
+            border: none;
+            border-radius: 5px;
+            color: #000;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            margin: 10px 0; /* Add some margin to separate buttons */
+            display: block; /* Make button block-level */
+            width: fit-content; /* Fit button to its content */
+            margin-left: auto; /* Center button */
+            margin-right: auto; /* Center button */
+        }
+
+        button:hover {
+            background-color: #000;
+            color: #fff;
+        }
+
+        .otp-message {
+            margin: 10px 0;
+            display: block; /* Show by default */
+        }
+
+        .otp-enter-message {
+            margin: 10px 0;
+            display: none; /* Initially hidden */
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Student Registration</h1>
+        <div class="input-group">
+            <input type="text" id="email" class="email-input" placeholder="Enter your partial email" required>
+            <div class="email-suffix">@saividya.ac.in</div>
+        </div>
+
+        <span class="otp-message" id="otp-message">OTP will be sent to email</span> <!-- OTP message -->
+        
+        <span class="otp-enter-message" id="otp-enter-message">Enter OTP</span> <!-- Enter OTP message -->
+        
+        <div class="otp-container" id="otp-container">
+            <div class="input-group">
+                <input type="text" class="otp-box" maxlength="1" onkeyup="moveToNext(this, 'otp2')" id="otp1">
+                <input type="text" class="otp-box" maxlength="1" onkeyup="moveToNext(this, 'otp3')" id="otp2">
+                <input type="text" class="otp-box" maxlength="1" onkeyup="moveToNext(this, 'otp4')" id="otp3">
+                <input type="text" class="otp-box" maxlength="1" onkeyup="moveToNext(this, 'otp1')" id="otp4">
+            </div>
+            <button id="register-button" style="display: none; margin-top: 20px;" onclick="submitForm()">Register</button> <!-- Initially hidden -->
+        </div>
+
+        <button id="send-otp-button" onclick="sendOtp()">Send OTP</button>
+    </div>
+
+    <script>
+        function sendOtp() {
+    const emailInput = document.getElementById('email');
+    const email = emailInput.value + '@saividya.ac.in'; // Append domain
+    emailInput.setAttribute('readonly', true); // Make input non-editable
+    
+    // Send the email to the backend via a POST request
+    fetch('/send-otp', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ email: email })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.message === 'OTP sent') {
+            document.getElementById('otp-container').style.display = 'block'; // Show OTP container
+            document.getElementById('otp-message').style.display = 'none'; // Hide OTP message
+            document.getElementById('otp-enter-message').style.display = 'block'; // Show Enter OTP message
+            document.getElementById('register-button').style.display = 'block'; // Show register button
+            document.getElementById('send-otp-button').style.display = 'none'; // Hide Send OTP button
+        } else {
+            alert('Failed to send OTP');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while sending OTP');
+    });
+}
+
+
+        function moveToNext(current, nextId) {
+            if (current.value.length >= 1) {
+                document.getElementById(nextId).focus();
+            }
+        }
+
+        function submitForm() {
+            // Add logic to handle form submission, e.g., send data to the server
+            alert('Form submitted!');
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Home Page</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Poppins', sans-serif;
+      background: linear-gradient(135deg, #1a1a2e, #2e2e38, #3c3c50);
+      background-size: 400% 400%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      color: #fff;
+      animation: subtleGradientShift 30s ease infinite; /* Longer duration */
+    }
+
+    .login-container {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding:10px ;
+            height: 250px;
+            width: 550px;
+            text-align: center;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.5);
+            transition: box-shadow 0.3s ease;
+        }
+
+    
+    @keyframes subtleGradientShift {
+      0% {
+        background: linear-gradient(135deg, #1a1a2e, #2e2e38, #3c3c50);
+      }
+      33% {
+        background: linear-gradient(135deg, #1b1b2f, #2f2f3a, #3e3e52);
+      }
+      66% {
+        background: linear-gradient(135deg, #1c1c30, #31313b, #404054);
+      }
+      100% {
+        background: linear-gradient(135deg, #1a1a2e, #2e2e38, #3c3c50);
+      }
+    }
+
+    .container {
+      text-align: center;
+    }
+    h1 {
+      font-size: 2.5rem;
+      margin-bottom: 40px;
+      letter-spacing: 2px;
+    }
+    .button-group {
+      display: flex;
+      justify-content: center;
+      gap: 25px;
+    }
+    .button {
+      position: relative;
+      padding: 15px 30px;
+      background-color: #ffffff;
+      border: none;
+      border-radius: 50px;
+      color: #000;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 1.2rem;
+      transition: all 0.3s ease;
+    }
+    .button:hover {
+      background-color: #000;
+      color: #fff;
+    }
+    .dropdown {
+      position: absolute;
+      top: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      margin-top: 2px;
+    }
+    .button:hover .dropdown {
+      display: flex;
+    }
+    .dropdown button {
+      padding: 10px 20px;
+      background-color: #ffffff;
+      color: #000;
+      border: none;
+      border-radius: 50px;
+      width: 100px;
+      font-size: 0.9rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      margin: 5px 0;
+    }
+    .dropdown button:hover {
+      background-color: #000;
+      color: #fff;
+    }
+  </style>
+</head>
+<body>
+  <div class="login-container">
+    <h1>Welcome to the Portal</h1>
+    <div class="button-group">
+      <!-- Student Button -->
+      <div class="button">
+        Student
+        <div class="dropdown">
+          <button onclick="window.location.href='/student-register'">Register</button>
+          <button onclick="window.location.href='/login-page'">Login</button>
+        </div>
+      </div>
+      <!-- MNC Button -->
+      <div class="button">
+        MNC
+        <div class="dropdown">
+          <button onclick="window.location.href='/login-page'">Login</button>
+        </div>
+      </div>
+      <div class="button">
+        Faculty
+        <div class="dropdown">
+          <button onclick="window.location.href='/register__faculty'">Register</button>
+          <button onclick="window.location.href='/faculty-login'">Login</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

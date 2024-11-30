@@ -156,6 +156,7 @@ def get_subject_credits(subject_code):
 def extract_specific_info_from_pdf(pdf_file):
     data = {"Student Name": None, "University Seat Number": None, "subjects": []}
     Total = 0
+    credit = 0
     try:
         with pdfplumber.open(pdf_file) as pdf:
             print("Opened PDF file successfully")
@@ -192,15 +193,15 @@ def extract_specific_info_from_pdf(pdf_file):
                                 # Ensure total_marks is an integer
                                 try:
                                     total_marks_int = int(total_marks)
-                                    if 51 <= total_marks_int <= 60:
+                                    if 50 <= total_marks_int <= 59:
                                         grader = 6
-                                    elif 61 <= total_marks_int <= 70:
+                                    elif 60 <= total_marks_int <= 69:
                                         grader = 7
-                                    elif 71 <= total_marks_int <= 80:
+                                    elif 70 <= total_marks_int <= 79:
                                         grader = 8
-                                    elif 81 <= total_marks_int <= 90:
+                                    elif 80 <= total_marks_int <= 89:
                                         grader = 9
-                                    elif 91 <= total_marks_int <= 100:
+                                    elif 90 <= total_marks_int <= 100:
                                         grader = 10
                                     else:
                                         grader = None  # Marks out of range or invalid
@@ -221,6 +222,7 @@ def extract_specific_info_from_pdf(pdf_file):
                                     print(f"Extracted subject - Code: {subject_code}, Name: {subject_name}, Marks: {total_marks}, Grader: {grader}, Credits: {credits}, Total Points: {total_points}")
 
                                     Total = Total + total_points
+                                    credit = credit + credits
                                     
                                 else:
                                     print(f"Invalid grader for subject {subject_code}. Skipping.")
@@ -230,7 +232,7 @@ def extract_specific_info_from_pdf(pdf_file):
     print("Extraction complete")
     print("Total points:", Total)
     print(get_subject_credits('Total'))
-    SGPA = Total / get_subject_credits('Total')
+    SGPA = Total / credit
     SGPA = round(SGPA, 2)
     print("SGPA:", SGPA)
     

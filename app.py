@@ -166,10 +166,10 @@ def extract_specific_info_from_pdf(pdf_file):
                     if len(table[0]) == 2:
                         for row in table:
                             if "Student Name" in row[0]:
-                                data["Student Name"] = row[1].strip()
+                                data["Student Name"] = row[1].strip().replace(":", "").strip()
                                 print(f"Extracted Student Name: {data['Student Name']}")
                             if "University Seat Number" in row[0]:
-                                data["University Seat Number"] = row[1].strip()
+                                data["University Seat Number"] = row[1].strip().replace(":", "").strip()
                                 print(f"Extracted University Seat Number: {data['University Seat Number']}")
 
                     elif len(table[0]) >= 3:

@@ -12,6 +12,8 @@ from email.mime.multipart import MIMEMultipart
 import pdfplumber
 from PyPDF2 import PdfReader
 
+global Total
+
 
 
 app = Flask(__name__)
@@ -85,10 +87,10 @@ def initialize_database():
             FOREIGN KEY (student_id) REFERENCES students(student_id))""")
 
 
-            cursor.execute("""CREATE TABLE IF NOT exists students (
-            student_id INT AUTO_INCREMENT PRIMARY KEY,
+            cursor.execute("""CREATE TABLE IF NOT exists students_sgpa (
+            USN VARCHAR(50) PRIMARY KEY,
             student_name VARCHAR(255) NOT NULL,
-            university_seat_number VARCHAR(50) NOT NULL))""")
+            SGPA FLOAT)""")
 
             
 
@@ -153,7 +155,7 @@ def get_subject_credits(subject_code):
 
 def extract_specific_info_from_pdf(pdf_file):
     data = {"Student Name": None, "University Seat Number": None, "subjects": []}
-    Total=0
+    Total = 0
     try:
         with pdfplumber.open(pdf_file) as pdf:
             print("Opened PDF file successfully")
@@ -218,7 +220,7 @@ def extract_specific_info_from_pdf(pdf_file):
                                     })
                                     print(f"Extracted subject - Code: {subject_code}, Name: {subject_name}, Marks: {total_marks}, Grader: {grader}, Credits: {credits}, Total Points: {total_points}")
 
-                                    Total=Total+total_points
+                                    Total = Total + total_points
                                     
                                 else:
                                     print(f"Invalid grader for subject {subject_code}. Skipping.")
@@ -228,9 +230,12 @@ def extract_specific_info_from_pdf(pdf_file):
     print("Extraction complete")
     print("Total points:", Total)
     print(get_subject_credits('Total'))
-    SGPA=Total/get_subject_credits('Total')
-    print("SGPA:",SGPA)
-    return data
+    SGPA = Total / get_subject_credits('Total')
+    SGPA = round(SGPA, 2)
+    print("SGPA:", SGPA)
+    
+    return data, SGPA  # Ensure we return both data and SGPA as expected.
+
 
     
 
@@ -339,37 +344,28 @@ def process_pdfs():
         cursor = connection.cursor()
 
         for pdf_file in files:
-            data = extract_specific_info_from_pdf(pdf_file)
+            # Extract the data and SGPA
+            data, SGPA = extract_specific_info_from_pdf(pdf_file)
             student_name = data.get("Student Name")
             university_seat_number = data.get("University Seat Number")
-            subjects_data = data.get("subjects")  # Assuming you have a list of subjects
+            
 
             # Insert student details into the students table
             cursor.execute("""
-                INSERT INTO students (student_name, university_seat_number)
-                VALUES (%s, %s)
-            """, (student_name, university_seat_number))
+            INSERT INTO students_sgpa (USN, student_name, SGPA)
+            VALUES (%s, %s, %s)
+            ON DUPLICATE KEY UPDATE SGPA = %s
+            """, (university_seat_number, student_name, SGPA, SGPA))  # Store SGPA here
 
             student_id = cursor.lastrowid  # Get the student_id of the newly inserted student
 
-            # Insert subjects for the student into the subjects table
-            for subject in subjects_data:
-                subject_code = subject.get("subject_code")  # Extract from the PDF
-                subject_name = subject.get("subject_name")  # Extract from the PDF
-                total_marks = subject.get("total_marks", 0)  # Default to 0 if missing
-
-                # Insert each subject in a new row
-                cursor.execute("""
-                    INSERT INTO subjects (student_id, subject_code, subject_name, total_marks)
-                    VALUES (%s, %s, %s, %s)
-                """, (student_id, subject_code, subject_name, total_marks))
-
+            
             connection.commit()  # Commit changes for this student
 
             extracted_data.append({
                 "student_name": student_name,
                 "university_seat_number": university_seat_number,
-                "subjects": subjects_data
+                "SGPA": SGPA  # Include SGPA in the response
             })
 
         return jsonify(extracted_data)

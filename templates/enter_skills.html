@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enter Skills</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Poppins', sans-serif;
+            background-color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            color: #aeaeae;
+        }
+        .container {
+            text-align: center;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+            width: 500px;
+        }
+        h1 {
+            margin-bottom: 20px;
+            color: #fff;
+        }
+        input, button {
+            margin: 10px 0;
+            padding: 10px;
+            width: 80%;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+        }
+        button {
+            background-color: #333;
+            color: #fff;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #555;
+        }
+        table {
+            width: 100%;
+            margin-top: 20px;
+            border-collapse: collapse;
+        }
+        table th, table td {
+            padding: 10px;
+            text-align: left;
+            border: 1px solid #ddd;
+        }
+        table th {
+            background-color: #333;
+            color: #fff;
+        }
+        .skills-container {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Enter Skills for <span id="student-name"></span></h1>
+        
+        <form id="skillsForm">
+            <input type="text" id="skillsInput" placeholder="Enter skills" required>
+            <button type="submit">Save Skills</button>
+        </form>
+
+        <div class="skills-container" id="skillsContainer">
+            
+            <table id="skillsTable">
+                <thead>
+                    <tr>
+                        <th>Skills</th>
+                    </tr>
+                </thead>
+                <tbody id="skillsTableBody">
+                    <!-- Skills will be populated here -->
+                </tbody>
+            </table>
+            <p id="noSkillsMessage" style="display: none;">No skills entered yet.</p>
+        </div>
+    </div>
+
+    <script>
+        const studentUSN = window.location.pathname.split('/').pop(); // Extract the USN from the URL
+        document.getElementById('student-name').innerText = studentUSN;
+
+        // Fetch the skills for this student when the page loads
+        async function fetchSkills() {
+            const response = await fetch(`/get-skills/${studentUSN}`);
+            const data = await response.json();
+
+            const skillsTableBody = document.getElementById('skillsTableBody');
+            const noSkillsMessage = document.getElementById('noSkillsMessage');
+
+            // Clear any previous skills
+            skillsTableBody.innerHTML = '';
+
+            if (data.skills && data.skills.length > 0) {
+                // Display the skills in the table
+                data.skills.forEach(skill => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `<td>${skill}</td>`;
+                    skillsTableBody.appendChild(row);
+                });
+                noSkillsMessage.style.display = 'none';
+            } else {
+                // If no skills, show the "No skills entered yet" message
+                noSkillsMessage.style.display = 'block';
+            }
+        }
+
+        // Call the fetchSkills function when the page loads
+        window.onload = fetchSkills;
+
+        // Handle form submission to save skills
+        document.getElementById('skillsForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const skills = document.getElementById('skillsInput').value;
+
+            // Send the skills data to the server
+            const response = await fetch(`/save-skills/${studentUSN}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ skills })
+            });
+
+            if (response.ok) {
+                alert('Skills saved successfully!');
+                fetchSkills(); // Refresh the skills list
+            } else {
+                alert('Failed to save skills.');
+            }
+        });
+    </script>
+</body>
+</html>

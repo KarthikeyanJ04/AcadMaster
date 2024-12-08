@@ -95,10 +95,8 @@ def initialize_database():
             total_marks INT DEFAULT 0,
             FOREIGN KEY (student_id) REFERENCES students(student_id))""")
 
-            cursor.execute("""(CREATE TABLE IF NOT EXISTS skills (
-            usn VARCHAR(20) PRIMARY KEY,
-            skills TEXT
-            );)""")
+            cursor.execute("""CREATE TABLE IF NOT EXISTS skills (
+            usn VARCHAR(20) PRIMARY KEY, skills TEXT)""")
 
 
             cursor.execute("""CREATE TABLE IF NOT exists students_sgpa (
@@ -758,6 +756,54 @@ def view_students():
     except Exception as e:
         print("Unexpected Error:", e)
         return jsonify({"error": "Unexpected error occurred"}), 500
+    
+@app.route('/enter-skills/<usn>')
+def enter_skills(usn):
+    return render_template('enter_skills.html', usn=usn)
+
+# Route to save skills
+@app.route('/save-skills/<usn>', methods=['POST'])
+def save_skills(usn):
+    data = request.get_json()
+    skills = data.get('skills', '')
+
+    try:
+        # Connect to MySQL database
+        db = MySQLdb.connect(host="localhost", user="root", passwd="jaikarthik", db="user_data")
+        cursor = db.cursor()
+
+        # Insert skills into the table
+        cursor.execute("INSERT INTO skills (usn, skills) VALUES (%s, %s)", (usn, skills))
+
+        db.commit()
+        db.close()
+        
+        return jsonify({"message": "Skills saved successfully!"}), 200
+
+    except MySQLdb.MySQLError as e:
+        return jsonify({"message": f"Error saving skills: {str(e)}"}), 500
+    
+@app.route('/get-skills/<usn>')
+def get_skills(usn):
+    try:
+        # Connect to MySQL database
+        db = MySQLdb.connect(host="localhost", user="root", passwd="jaikarthik", db="user_data")
+        cursor = db.cursor()
+
+        # Query to get the skills associated with the student
+        cursor.execute("SELECT skills FROM skills WHERE usn = %s", (usn,))
+        result = cursor.fetchone()
+        
+        db.close()
+
+        # If skills are found, return them as a list, otherwise return an empty list
+        if result:
+            return jsonify({"skills": result[0].split(', ')})  # Assuming skills are stored as comma-separated
+        else:
+            return jsonify({"skills": []})
+    
+    except MySQLdb.MySQLError as e:
+        return jsonify({"message": f"Error fetching skills: {str(e)}"}), 500
 
 
 

@@ -216,41 +216,34 @@ document.getElementById('view-students').addEventListener('click', async functio
 
 
 function renderStudentsTable(data) {
-    const tableBody = document.getElementById('table-body'); // Ensure this ID matches
+    const tableBody = document.getElementById('table-body');
     const resultTable = document.getElementById('result-table');
 
-    // Clear previous table content
     tableBody.innerHTML = '';
-    console.log('Cleared previous table content.');
-
+    
     if (!data || data.length === 0) {
-        console.log('No student data to display.');
         tableBody.innerHTML = `
             <tr>
                 <td colspan="3" style="text-align: center;">No students found</td>
             </tr>
         `;
-        resultTable.style.display = 'table'; // Show the table even if empty
+        resultTable.style.display = 'table';
         return;
     }
 
-    // Populate table rows
     data.forEach(student => {
-        console.log('Processing student:', student); // Log each student array
         const row = document.createElement('tr');
         row.innerHTML = `
-            <td>${student[0] || 'N/A'}</td> <!-- student_name -->
+            <td><a href="/enter-skills/${student[1]}" class="student-name">${student[0] || 'N/A'}</a></td> <!-- student_name -->
             <td>${student[1] || 'N/A'}</td> <!-- university_seat_number -->
-            <td>${student[2] !== null ? student[2] : 'N/A'}</td> <!-- sgpa -->
+            <td>${student[2] !== null ? student[2] : 'N/A'}</td> <!-- SGPA -->
         `;
-        console.log('Generated row content:', row.innerHTML); // Log generated row
         tableBody.appendChild(row);
     });
 
-    // Make the table visible
     resultTable.style.display = 'table';
-    console.log('Student data rendered successfully.');
 }
+
 
 
 

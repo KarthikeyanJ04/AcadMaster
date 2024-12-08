@@ -95,6 +95,11 @@ def initialize_database():
             total_marks INT DEFAULT 0,
             FOREIGN KEY (student_id) REFERENCES students(student_id))""")
 
+            cursor.execute("""(CREATE TABLE IF NOT EXISTS skills (
+            usn VARCHAR(20) PRIMARY KEY,
+            skills TEXT
+            );)""")
+
 
             cursor.execute("""CREATE TABLE IF NOT exists students_sgpa (
             USN VARCHAR(50) PRIMARY KEY,

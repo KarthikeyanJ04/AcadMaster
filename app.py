@@ -732,7 +732,7 @@ def view_students():
         cursor = connection.cursor(MySQLdb.cursors.DictCursor)
 
         # Fetch data from the students_sgpa table
-        cursor.execute("SELECT student_name, USN, SGPA FROM students_sgpa ORDER BY USN ASC")
+        cursor.execute("SELECT student_name, USN, SGPA FROM students_sgpa ORDER BY SGPA DESC")
         results = cursor.fetchall()
 
         # Close the connection

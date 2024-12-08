@@ -735,12 +735,16 @@ def view_students():
         cursor.execute("SELECT student_name, USN, SGPA FROM students_sgpa ORDER BY SGPA DESC")
         results = cursor.fetchall()
 
+        print("Fetched Results:", results)
+
         # Close the connection
         cursor.close()
         connection.close()
 
         # Return the data as JSON
         return jsonify(results)
+
+        
 
     except MySQLdb.Error as db_err:
         print("Database Error:", db_err)

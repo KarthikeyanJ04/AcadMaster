@@ -102,7 +102,7 @@
         <button id="export-btn">Export as CSV</button>
 
         <button id="view-students">View Students</button>
-        
+
         <!-- Results Table -->
         <table id="result-table">
             <thead>
@@ -197,6 +197,12 @@ document.querySelector('input[type="file"]').addEventListener('change', function
     const fileCountText = fileCount === 0 ? 'No files selected' : `${fileCount} file(s) selected`;
     document.getElementById('file-count').textContent = fileCountText;
 });
+
+document.getElementById('view-students').addEventListener('click', async function() {
+        const response = await fetch('/view-students'); // Call the Flask route
+        const data = await response.json(); // Parse the JSON response
+        displayResults(data); // Display the data in the results table
+    });
 
         
     </script>

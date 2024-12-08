@@ -724,6 +724,36 @@ def export_sgpa_csv():
     # Set the appropriate header for CSV file download
     return Response(generate(), mimetype='text/csv', headers={'Content-Disposition': 'attachment;filename=sgpa_data.csv'})
 
+@app.route('/view-students', methods=['GET'])
+def view_students():
+    try:
+        # Connect to the database
+        connection = get_db_connection()
+        cursor = connection.cursor(MySQLdb.cursors.DictCursor)
+
+        # Fetch data from the students_sgpa table
+        cursor.execute("SELECT student_name, USN, SGPA FROM students_sgpa ORDER BY SGPA DESC")
+        results = cursor.fetchall()
+
+        print("Fetched Results:", results)
+
+        # Close the connection
+        cursor.close()
+        connection.close()
+
+        # Return the data as JSON
+        return jsonify(results)
+
+        
+
+    except MySQLdb.Error as db_err:
+        print("Database Error:", db_err)
+        return jsonify({"error": "Database error occurred"}), 500
+
+    except Exception as e:
+        print("Unexpected Error:", e)
+        return jsonify({"error": "Unexpected error occurred"}), 500
+
 
 
 if __name__ == '__main__':

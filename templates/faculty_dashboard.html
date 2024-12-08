@@ -101,6 +101,8 @@
         <!-- Export Button -->
         <button id="export-btn">Export as CSV</button>
 
+        <button id="view-students">View Students</button>
+
         <!-- Results Table -->
         <table id="result-table">
             <thead>
@@ -195,6 +197,64 @@ document.querySelector('input[type="file"]').addEventListener('change', function
     const fileCountText = fileCount === 0 ? 'No files selected' : `${fileCount} file(s) selected`;
     document.getElementById('file-count').textContent = fileCountText;
 });
+
+document.getElementById('view-students').addEventListener('click', async function () {
+    try {
+        const response = await fetch('/view-students');
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        console.log('Fetched data from /view-students:', data); // Debugging output
+        renderStudentsTable(data); // Call the updated function
+    } catch (error) {
+        console.error('Error fetching students:', error); // Log any errors
+    }
+});
+
+
+
+function renderStudentsTable(data) {
+    const tableBody = document.getElementById('table-body'); // Ensure this ID matches
+    const resultTable = document.getElementById('result-table');
+
+    // Clear previous table content
+    tableBody.innerHTML = '';
+    console.log('Cleared previous table content.');
+
+    if (!data || data.length === 0) {
+        console.log('No student data to display.');
+        tableBody.innerHTML = `
+            <tr>
+                <td colspan="3" style="text-align: center;">No students found</td>
+            </tr>
+        `;
+        resultTable.style.display = 'table'; // Show the table even if empty
+        return;
+    }
+
+    // Populate table rows
+    data.forEach(student => {
+        console.log('Processing student:', student); // Log each student array
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${student[0] || 'N/A'}</td> <!-- student_name -->
+            <td>${student[1] || 'N/A'}</td> <!-- university_seat_number -->
+            <td>${student[2] !== null ? student[2] : 'N/A'}</td> <!-- sgpa -->
+        `;
+        console.log('Generated row content:', row.innerHTML); // Log generated row
+        tableBody.appendChild(row);
+    });
+
+    // Make the table visible
+    resultTable.style.display = 'table';
+    console.log('Student data rendered successfully.');
+}
+
+
+
+
 
         
     </script>

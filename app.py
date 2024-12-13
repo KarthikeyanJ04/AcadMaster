@@ -811,40 +811,63 @@ def save_skills(usn):
     
 @app.route('/students-with-skill', methods=['POST'])
 def students_with_skill():
-    data = request.json
+    # Get skill and minimum SGPA from the frontend
+    data = request.get_json()
     skill = data.get('skill')
+    min_sgpa = data.get('min_sgpa')
     
-    if not skill:
-        return jsonify({"message": "No skill provided"}), 400
+    # Establish a connection to the database
+    db = MySQLdb.connect(host="localhost", user="root", passwd="jaikarthik", db="user_data")
+    cursor = db.cursor()
+
+    # Query to get students who have the skill and meet the minimum SGPA
+    query = """
+        SELECT s.usn, s.student_name, s.sgpa
+        FROM students_sgpa s
+        JOIN skills ss ON s.usn = ss.usn
+        JOIN skills sk ON ss.skill_id = sk.id
+        WHERE sk.name = %s AND s.sgpa >= %s
+    """
+    cursor.execute(query, (skill, min_sgpa))
+    result = cursor.fetchall()
+
+    # Close the cursor and connection
+    cursor.close()
+    db.close()
+
+    # Prepare the students list for the response
+    students = [{"usn": row[0], "name": row[1], "sgpa": row[2]} for row in result]
     
-    try:
-        db = MySQLdb.connect(host="localhost", user="root", passwd="jaikarthik", db="user_data")
-        cursor = db.cursor()
+    # Return the students as a JSON response
+    return jsonify({"students": students})
 
-        # Debugging: Check if skill exists in the database first
-        print(f"Searching for skill: {skill}")
 
-        # Query to fetch students by skill from the `skills` column with comma-separated values
-        cursor.execute("""
-            SELECT s.student_name, s.usn 
-            FROM students_sgpa s 
-            JOIN skills sk ON s.usn = sk.usn 
-            WHERE sk.skills LIKE %s
-        """, (f"%{skill}%",))
+
+@app.route('/student-details/<usn>', methods=['GET'])
+def student_details(usn):
+    cursor = db.cursor()
+
+    # Query to retrieve student name, SGPA and skills from the corresponding tables
+    query = """
+        SELECT ss.student_name, ss.sgpa, sk.skill_name
+        FROM students_sgpa ss
+        LEFT JOIN student_skills sk ON ss.usn = sk.usn
+        WHERE ss.usn = %s
+    """
+    cursor.execute(query, (usn,))
+    result = cursor.fetchall()
+
+    if result:
+        # Parse the results
+        student_name = result[0][0]
+        sgpa = result[0][1]
+        skills = [row[2] for row in result if row[2]]  # Only include non-null skills
         
-        students = cursor.fetchall()
-        db.close()
+        return jsonify({"name": student_name, "sgpa": sgpa, "skills": skills})
+    else:
+        return jsonify({"error": "Student not found"}), 404
 
-        # Debugging: Check the result
-        print(f"Students found: {students}")
 
-        if students:
-            return jsonify({"students": students})
-        else:
-            return jsonify({"message": "No student found with this skill"}), 404
-
-    except MySQLdb.MySQLError as e:
-        return jsonify({"message": f"Database error: {str(e)}"}), 500
 
 
 @app.route('/get-skills/<student_usn>', methods=['GET'])
@@ -870,28 +893,11 @@ def get_skills(student_usn):
         return jsonify({"message": f"Database error: {str(e)}"}), 500
 
 
-@app.route('/student-details/<usn>', methods=['GET'])
-def get_student_skills(usn):
-    try:
-        # Connect to the database
-        db = MySQLdb.connect(host="localhost", user="root", passwd="jaikarthik", db="user_data")
-        cursor = db.cursor()
 
-        # Query to fetch skills for the student
-        cursor.execute("SELECT skills FROM skills WHERE usn = %s", (usn,))
-        result = cursor.fetchone()
 
-        db.close()
 
-        if result:
-            skills = result[0].split(', ')  # Assuming skills are stored as a comma-separated string
-            return jsonify({"skills": skills})
-        else:
-            return jsonify({"skills": []})
 
-    except MySQLdb.MySQLError as e:
-        print(f"Error fetching skills for {usn}: {str(e)}")
-        return jsonify({"message": f"Error fetching skills for {usn}: {str(e)}"}), 500
+
 
 
 

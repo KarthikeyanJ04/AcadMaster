@@ -69,6 +69,7 @@
         
         <form id="skillsForm">
             <input type="text" id="skillsInput" placeholder="Enter skill" required>
+            <input type="number" id="minSgpaInput" placeholder="Minimum SGPA" step="0.01">
             <button type="submit">Search Students</button>
         </form>
 
@@ -79,6 +80,7 @@
                     <tr>
                         <th>USN</th>
                         <th>Name</th>
+                        <th>SGPA</th>
                     </tr>
                 </thead>
                 <tbody id="students-body">
@@ -111,9 +113,10 @@
             document.getElementById('skillsForm').addEventListener('submit', function (event) {
                 event.preventDefault();
                 
-                // Get the skill entered by the user
+                // Get the skill and minimum SGPA entered by the user
                 const skill = document.getElementById('skillsInput').value;
-                
+                const minSgpa = parseFloat(document.getElementById('minSgpaInput').value) || 0;
+
                 // Make a POST request to fetch students with the given skill
                 fetch('/students-with-skill', {
                     method: 'POST',
@@ -128,10 +131,15 @@
                     studentsBody.innerHTML = ''; // Clear previous results
 
                     if (data.students && data.students.length > 0) {
-                        data.students.forEach(student => {
+                        // Filter students by SGPA and sort in descending order
+                        const filteredStudents = data.students
+                            .filter(student => student.sgpa >= minSgpa)
+                            .sort((a, b) => b.sgpa - a.sgpa);
+
+                        filteredStudents.forEach(student => {
                             const row = document.createElement('tr');
-                            const studentLink = `<a href="#" class="student-link" data-usn="${student[0]}" style="color: inherit; text-decoration: none;">${student[1]}</a>`;
-                            row.innerHTML = `<td>${student[0]}</td><td>${studentLink}</td>`;
+                            const studentLink = `<a href="#" class="student-link" data-usn="${student.usn}" style="color: inherit; text-decoration: none;">${student.name}</a>`;
+                            row.innerHTML = `<td>${student.usn}</td><td>${studentLink}</td><td>${student.sgpa}</td>`;
                             studentsBody.appendChild(row);
                         });
 
@@ -159,22 +167,22 @@
                 .then(data => {
                     const skillsContainer = document.getElementById('skills-container');
                     const skillsTableBody = document.getElementById('skillsTableBody');
-                    skillsTableBody.innerHTML = '';
+                    skillsTableBody.innerHTML = '';  // Clear any previous content
 
                     if (data.skills && data.skills.length > 0) {
                         data.skills.forEach(skill => {
                             const row = document.createElement('tr');
-                            row.innerHTML = `<td>${skill}</td>`;
+                            row.innerHTML = `<td>${skill}</td>`;  // Display each skill in a new row
                             skillsTableBody.appendChild(row);
                         });
-                        document.getElementById('student-name').innerText = usn;
-                        skillsContainer.style.display = 'block';
+                        document.getElementById('student-name').innerText = usn;  // You can also show the student's name here if needed
+                        skillsContainer.style.display = 'block';  // Make the skills container visible
                     } else {
                         alert('No skills found for this student.');
                     }
                 })
                 .catch(error => {
-                    console.error('Error:', error);
+                    console.error('Error:', error);  // Log any errors
                 });
         }
     </script>

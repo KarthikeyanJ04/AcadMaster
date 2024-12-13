@@ -68,12 +68,11 @@
         <h1>Enter Skills for <span id="student-name"></span></h1>
         
         <form id="skillsForm">
-            <input type="text" id="skillsInput" placeholder="Enter skills" required>
+            <input type="text" id="skillsInput" placeholder="Enter skills separated by commas" required>
             <button type="submit">Save Skills</button>
         </form>
 
         <div class="skills-container" id="skillsContainer">
-            
             <table id="skillsTable">
                 <thead>
                     <tr>
@@ -124,7 +123,16 @@
         document.getElementById('skillsForm').addEventListener('submit', async function(e) {
             e.preventDefault();
 
-            const skills = document.getElementById('skillsInput').value;
+            const skillsInput = document.getElementById('skillsInput').value.trim();
+
+            // Ensure skills input is not empty
+            if (skillsInput === "") {
+                alert("Please enter at least one skill.");
+                return;
+            }
+
+            // Prepare skills string, splitting by commas
+            const skills = skillsInput.split(',').map(skill => skill.trim()).join(','); // Removes any extra spaces
 
             // Send the skills data to the server
             const response = await fetch(`/save-skills/${studentUSN}`, {
@@ -138,6 +146,7 @@
             if (response.ok) {
                 alert('Skills saved successfully!');
                 fetchSkills(); // Refresh the skills list
+                document.getElementById('skillsInput').value = ''; // Clear input field
             } else {
                 alert('Failed to save skills.');
             }

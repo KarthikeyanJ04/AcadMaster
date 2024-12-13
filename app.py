@@ -96,7 +96,7 @@ def initialize_database():
             FOREIGN KEY (student_id) REFERENCES students(student_id))""")
 
             cursor.execute("""CREATE TABLE IF NOT EXISTS skills (
-            usn VARCHAR(20) PRIMARY KEY, skills TEXT)""")
+            usn VARCHAR(20), skills TEXT, PRIMARY KEY (usn), FOREIGN KEY (usn) REFERENCES subject_sgpa(USN))""")
 
 
             cursor.execute("""CREATE TABLE IF NOT exists students_sgpa (
@@ -604,6 +604,10 @@ def register_placement():
         hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
         
         # Insert the faculty details into the 'faculty' table
+        cursor.execute("""CREATE TABLE IF NOT EXISTS PLACEMENT (name VARCHAR(100),
+                    email VARCHAR(100) UNIQUE,
+                    password VARCHAR(255))""")
+        
         cursor.execute("""
             INSERT INTO placement (name, email, password)
             VALUES (%s, %s, %s)
@@ -654,30 +658,41 @@ def faculty_login():
     return render_template('faculty_login.html')
 
 @app.route('/placement-faculty-login', methods=['POST'])
-def placement_faculty_login_post():
-    email = request.form['email']
-    password = request.form['password'].encode('utf-8')  # Encode the input password
+def placement_login():
+    data = request.json
+    if not data:
+        return jsonify({"message": "Invalid request format"}), 400
+    email = data.get('email').strip().lower()
+    password = data.get('password').strip()
 
-    # Establish connection and query the faculty table
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("SELECT password FROM placement WHERE email = %s", (email,))
-    result = cursor.fetchone()
-    conn.close()
+    try:
+        db = MySQLdb.connect(host="localhost", user="root", passwd="jaikarthik", db="user_data")
+        cursor = db.cursor()
 
-    if result:
-        stored_password = result[0].encode('utf-8')  # Encode stored hash for bcrypt comparison
-        if bcrypt.checkpw(password, stored_password):
-            session['placement_faculty_logged_in'] = True
-            session['placement_faculty_email'] = email
-            flash('Login successful!', 'success')
-            return redirect(url_for('placement_faculty_dashboard'))  # Redirect to faculty dashboard
+        cursor.execute("SELECT password FROM placement WHERE email = %s", (email,))
+        result = cursor.fetchone()
+
+        if result:
+            stored_hashed_password = result[0]
+            if bcrypt.checkpw(password.encode('utf-8'), stored_hashed_password.encode('utf-8')):
+                session['placement_logged_in'] = True
+                session['email'] = email
+                db.close()
+                
+                # Redirect to the placement faculty dashboard after successful login
+                return redirect(url_for('placement_dashboard'))  # 'placement_dashboard' is the name of the view you want to redirect to
+            else:
+                db.close()
+                return jsonify({"message": "Invalid email or password"}), 401
         else:
-            flash('Incorrect password. Please try again.', 'danger')
-    else:
-        flash('Email not found. Please check or register first.', 'warning')
+            db.close()
+            return jsonify({"message": "Invalid email or password"}), 401
 
-    return redirect(url_for('faculty_login'))
+    except MySQLdb.MySQLError as e:
+        return jsonify({"message": f"Database error: {str(e)}"}), 500
+
+
+
 
 # Route for faculty login page
 @app.route('/placement-faculty-login')
@@ -685,12 +700,11 @@ def placement_faculty_login():
     return render_template('placement_login.html')
 
 @app.route('/placement-faculty-dashboard')
-def placement_faculty_dashboard():
-    
-    if 'placement_faculty_logged_in' not in session:
-        flash('Please log in first.', 'warning')
-        return redirect(url_for('placement_faculty_login'))
-    return render_template('placement_faculty_dashboard.html')
+def placement_dashboard():
+    if 'placement_logged_in' not in session:
+        return redirect(url_for('placement_login'))  # Redirect to login if not logged in
+    return render_template('placement_dashboard.html')
+
 
 # Example faculty dashboard route (redirected after login)
 @app.route('/faculty-dashboard')
@@ -765,15 +779,24 @@ def enter_skills(usn):
 @app.route('/save-skills/<usn>', methods=['POST'])
 def save_skills(usn):
     data = request.get_json()
-    skills = data.get('skills', '')
+    new_skills = data.get('skills', '')
 
     try:
         # Connect to MySQL database
         db = MySQLdb.connect(host="localhost", user="root", passwd="jaikarthik", db="user_data")
         cursor = db.cursor()
 
-        # Insert skills into the table
-        cursor.execute("INSERT INTO skills (usn, skills) VALUES (%s, %s)", (usn, skills))
+        # Check if the student already has skills in the database
+        cursor.execute("SELECT skills FROM skills WHERE usn = %s", (usn,))
+        existing_skills = cursor.fetchone()
+
+        if existing_skills:
+            # If skills exist, append the new skills to the existing ones
+            updated_skills = existing_skills[0] + ', ' + new_skills
+            cursor.execute("UPDATE skills SET skills = %s WHERE usn = %s", (updated_skills, usn))
+        else:
+            # If no skills exist for the student, insert the new skills
+            cursor.execute("INSERT INTO skills (usn, skills) VALUES (%s, %s)", (usn, new_skills))
 
         db.commit()
         db.close()
@@ -781,29 +804,96 @@ def save_skills(usn):
         return jsonify({"message": "Skills saved successfully!"}), 200
 
     except MySQLdb.MySQLError as e:
+        # Log the error for debugging purposes
+        print(f"Error saving skills: {str(e)}")  # This will show up in the Flask console
         return jsonify({"message": f"Error saving skills: {str(e)}"}), 500
+
     
-@app.route('/get-skills/<usn>')
-def get_skills(usn):
+@app.route('/students-with-skill', methods=['POST'])
+def students_with_skill():
+    data = request.json
+    skill = data.get('skill')
+    
+    if not skill:
+        return jsonify({"message": "No skill provided"}), 400
+    
     try:
-        # Connect to MySQL database
         db = MySQLdb.connect(host="localhost", user="root", passwd="jaikarthik", db="user_data")
         cursor = db.cursor()
 
-        # Query to get the skills associated with the student
-        cursor.execute("SELECT skills FROM skills WHERE usn = %s", (usn,))
-        result = cursor.fetchone()
+        # Debugging: Check if skill exists in the database first
+        print(f"Searching for skill: {skill}")
+
+        # Query to fetch students by skill from the `skills` column with comma-separated values
+        cursor.execute("""
+            SELECT s.student_name, s.usn 
+            FROM students_sgpa s 
+            JOIN skills sk ON s.usn = sk.usn 
+            WHERE sk.skills LIKE %s
+        """, (f"%{skill}%",))
         
+        students = cursor.fetchall()
         db.close()
 
-        # If skills are found, return them as a list, otherwise return an empty list
+        # Debugging: Check the result
+        print(f"Students found: {students}")
+
+        if students:
+            return jsonify({"students": students})
+        else:
+            return jsonify({"message": "No student found with this skill"}), 404
+
+    except MySQLdb.MySQLError as e:
+        return jsonify({"message": f"Database error: {str(e)}"}), 500
+
+
+@app.route('/get-skills/<student_usn>', methods=['GET'])
+def get_skills(student_usn):
+    try:
+        db = MySQLdb.connect(host="localhost", user="root", passwd="jaikarthik", db="user_data")
+        cursor = db.cursor()
+
+        # Example query to fetch skills for the specific student based on student_usn
+        cursor.execute("SELECT skills FROM skills WHERE usn = %s", (student_usn,))
+        skills_data = cursor.fetchall()
+
+        db.close()
+
+        if skills_data:
+            # skills_data is a list of tuples, so we need to extract the skills
+            skills = [skill[0] for skill in skills_data]
+            return jsonify({"skills": skills})  # Return a JSON response with skills data
+        else:
+            return jsonify({"message": "No skills data found for this student"}), 404
+
+    except MySQLdb.MySQLError as e:
+        return jsonify({"message": f"Database error: {str(e)}"}), 500
+
+
+@app.route('/student-details/<usn>', methods=['GET'])
+def get_student_skills(usn):
+    try:
+        # Connect to the database
+        db = MySQLdb.connect(host="localhost", user="root", passwd="jaikarthik", db="user_data")
+        cursor = db.cursor()
+
+        # Query to fetch skills for the student
+        cursor.execute("SELECT skills FROM skills WHERE usn = %s", (usn,))
+        result = cursor.fetchone()
+
+        db.close()
+
         if result:
-            return jsonify({"skills": result[0].split(', ')})  # Assuming skills are stored as comma-separated
+            skills = result[0].split(', ')  # Assuming skills are stored as a comma-separated string
+            return jsonify({"skills": skills})
         else:
             return jsonify({"skills": []})
-    
+
     except MySQLdb.MySQLError as e:
-        return jsonify({"message": f"Error fetching skills: {str(e)}"}), 500
+        print(f"Error fetching skills for {usn}: {str(e)}")
+        return jsonify({"message": f"Error fetching skills for {usn}: {str(e)}"}), 500
+
+
 
 
 

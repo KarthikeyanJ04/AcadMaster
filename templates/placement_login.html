@@ -90,6 +90,31 @@
             <input type="password" id="password" name="password" placeholder="Enter your password" required>
 
             <button type="submit">Login</button>
+            
+            <script>
+                fetch('/placement-faculty-login', {
+    method: 'POST',
+    headers: {
+        'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+        email: "jkarthikeyan.22cs@saividya.ac.in",
+        password: "jaikarthik"
+    })
+})
+.then(response => {
+    if (response.ok) {
+        // Optionally, you can handle any UI updates on success here.
+        window.location.href = "/placement-faculty-dashboard"; // This will navigate to the dashboard after successful login.
+    } else {
+        response.json().then(data => alert(data.message)); // Handle errors
+    }
+})
+.catch(error => {
+    console.error('Error during login:', error);
+});
+
+            </script>
         </form>
     </div>
 </body>

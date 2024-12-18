@@ -823,11 +823,12 @@ def get_db_connection():
 
 @app.route('/students-with-skill', methods=['POST'])
 def students_with_skill():
-    # Get the skill from the frontend
+    # Get the skill and minimum SGPA from the frontend
     data = request.get_json()
     skill = data.get('skill')
+    min_sgpa = data.get('min_sgpa', 0)  # Default to 0 if not provided
 
-    # Connect to the remote MySQL database
+    # Connect to the MySQL database
     db = pymysql.connect(
         host="localhost",
         user="root",       
@@ -836,22 +837,24 @@ def students_with_skill():
     )
     cursor = db.cursor()
 
-    # Query to get students who have the skill (using LIKE to match comma-separated skills)
+    # Query to get students who have the skill and meet the minimum SGPA
     query = """
         SELECT s.usn, s.student_name, s.sgpa
         FROM students_sgpa s
         JOIN skills sk ON s.usn = sk.usn
-        WHERE sk.skills LIKE %s
+        WHERE CONCAT(',', sk.skills, ',') LIKE %s
+        AND s.sgpa >= %s
     """
-    # Add the skill surrounded by commas to match the comma-separated list
-    skill_search = f"%{skill}%"  # Use % as a wildcard for LIKE query
-    cursor.execute(query, (skill_search,))
+    
+    skill_search = f"%,{skill},%"  # Match the skill in the comma-separated list
+    cursor.execute(query, (skill_search, min_sgpa))
     result = cursor.fetchall()
 
     # Return the students as a JSON response
     students = [{"usn": row[0], "name": row[1], "sgpa": row[2]} for row in result]
     db.close()
     return jsonify({"students": students})
+
 
 
 

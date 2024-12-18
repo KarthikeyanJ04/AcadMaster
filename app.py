@@ -25,6 +25,7 @@ db_config = {
     'host': 'localhost',
     'user': 'root',
     'password': 'jaikarthik'
+    
 }
 
 db_config_with_database = db_config.copy()
@@ -809,75 +810,99 @@ def save_skills(usn):
         return jsonify({"message": f"Error saving skills: {str(e)}"}), 500
 
     
+
+# Database connection function to avoid repetitive code
+def get_db_connection():
+    return pymysql.connect(
+        host="localhost",
+        user="root",       # Replace with your username
+        passwd="jaikarthik",  # Replace with your password
+        db="user_data",    # Replace with your database name
+    )
+
+
 @app.route('/students-with-skill', methods=['POST'])
 def students_with_skill():
-    # Get skill and minimum SGPA from the frontend
+    # Get the skill from the frontend
     data = request.get_json()
     skill = data.get('skill')
-    min_sgpa = data.get('min_sgpa')
-    
-    # Establish a connection to the database
-    db = MySQLdb.connect(host="localhost", user="root", passwd="jaikarthik", db="user_data")
+
+    # Connect to the remote MySQL database
+    db = pymysql.connect(
+        host="localhost",
+        user="root",       
+        passwd="jaikarthik",     
+        db="user_data",    
+    )
     cursor = db.cursor()
 
-    # Query to get students who have the skill and meet the minimum SGPA
+    # Query to get students who have the skill (using LIKE to match comma-separated skills)
     query = """
         SELECT s.usn, s.student_name, s.sgpa
         FROM students_sgpa s
-        JOIN skills ss ON s.usn = ss.usn
-        JOIN skills sk ON ss.skill_id = sk.id
-        WHERE sk.name = %s AND s.sgpa >= %s
+        JOIN skills sk ON s.usn = sk.usn
+        WHERE sk.skills LIKE %s
     """
-    cursor.execute(query, (skill, min_sgpa))
+    # Add the skill surrounded by commas to match the comma-separated list
+    skill_search = f"%{skill}%"  # Use % as a wildcard for LIKE query
+    cursor.execute(query, (skill_search,))
     result = cursor.fetchall()
 
-    # Close the cursor and connection
-    cursor.close()
-    db.close()
-
-    # Prepare the students list for the response
-    students = [{"usn": row[0], "name": row[1], "sgpa": row[2]} for row in result]
-    
     # Return the students as a JSON response
+    students = [{"usn": row[0], "name": row[1], "sgpa": row[2]} for row in result]
+    db.close()
     return jsonify({"students": students})
+
+
 
 
 
 @app.route('/student-details/<usn>', methods=['GET'])
 def student_details(usn):
-    cursor = db.cursor()
+    try:
+        # Connect to the database
+        db = get_db_connection()
+        cursor = db.cursor()
 
-    # Query to retrieve student name, SGPA and skills from the corresponding tables
-    query = """
-        SELECT ss.student_name, ss.sgpa, sk.skill_name
-        FROM students_sgpa ss
-        LEFT JOIN student_skills sk ON ss.usn = sk.usn
-        WHERE ss.usn = %s
-    """
-    cursor.execute(query, (usn,))
-    result = cursor.fetchall()
+        # Query to retrieve student name, SGPA, and skills from the corresponding tables
+        query = """
+            SELECT ss.student_name, ss.sgpa, sk.skills
+            FROM students_sgpa ss
+            LEFT JOIN skills sk ON ss.usn = sk.usn
+            WHERE ss.usn = %s
+        """
+        cursor.execute(query, (usn,))
+        result = cursor.fetchall()
 
-    if result:
-        # Parse the results
-        student_name = result[0][0]
-        sgpa = result[0][1]
-        skills = [row[2] for row in result if row[2]]  # Only include non-null skills
-        
-        return jsonify({"name": student_name, "sgpa": sgpa, "skills": skills})
-    else:
-        return jsonify({"error": "Student not found"}), 404
+        db.close()
 
+        if result:
+            # Parse the results
+            student_name = result[0][0]
+            sgpa = result[0][1]
+            skills = [row[2] for row in result if row[2]]  # Only include non-null skills
 
+            return jsonify({"name": student_name, "sgpa": sgpa, "skills": skills})
+        else:
+            return jsonify({"error": "Student not found"}), 404
+
+    except pymysql.MySQLError as e:
+        return jsonify({"error": f"Database error: {str(e)}"}), 500
+
+    except Exception as e:
+        return jsonify({"error": f"An error occurred: {str(e)}"}), 500
 
 
 @app.route('/get-skills/<student_usn>', methods=['GET'])
 def get_skills(student_usn):
     try:
-        db = MySQLdb.connect(host="localhost", user="root", passwd="jaikarthik", db="user_data")
+        # Connect to the database
+        db = get_db_connection()
         cursor = db.cursor()
 
-        # Example query to fetch skills for the specific student based on student_usn
-        cursor.execute("SELECT skills FROM skills WHERE usn = %s", (student_usn,))
+        # Query to fetch skills for the specific student based on USN
+        query = "SELECT skills FROM skills WHERE usn = %s"
+        cursor.execute(query, (student_usn,))
         skills_data = cursor.fetchall()
 
         db.close()
@@ -889,8 +914,11 @@ def get_skills(student_usn):
         else:
             return jsonify({"message": "No skills data found for this student"}), 404
 
-    except MySQLdb.MySQLError as e:
-        return jsonify({"message": f"Database error: {str(e)}"}), 500
+    except pymysql.MySQLError as e:
+        return jsonify({"error": f"Database error: {str(e)}"}), 500
+
+    except Exception as e:
+        return jsonify({"error": f"An error occurred: {str(e)}"}), 500
 
 
 

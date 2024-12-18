@@ -60,19 +60,30 @@
         .students-container {
             margin-top: 20px;
         }
+        a {
+            color: inherit;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+        #noStudentsMessage, #skills-container {
+            display: none;
+        }
     </style>
 </head>
 <body>
-
     <div class="container">
         <h1>Placement Dashboard</h1>
         
+        <!-- Form to Search for Students -->
         <form id="skillsForm">
             <input type="text" id="skillsInput" placeholder="Enter skill" required>
-            <input type="number" id="minSgpaInput" placeholder="Minimum SGPA" step="0.01">
+            
             <button type="submit">Search Students</button>
         </form>
 
+        <!-- Students List Section -->
         <div class="students-container" id="studentsContainer">
             <h3>Students with the Skill</h3>
             <table id="studentsTable">
@@ -87,11 +98,11 @@
                     <!-- Students with the skill will be populated here -->
                 </tbody>
             </table>
-            <p id="noStudentsMessage" style="display: none;">No students found with this skill.</p>
+            <p id="noStudentsMessage">No students found with this skill.</p>
         </div>
 
-        <!-- Skills table for selected student -->
-        <div id="skills-container" style="display: none;">
+        <!-- Skills Table for Selected Student -->
+        <div id="skills-container">
             <h3>Skills of Student <span id="student-name"></span></h3>
             <table id="skillsTable">
                 <thead>
@@ -107,85 +118,47 @@
     </div>
 
     <script>
-        // Wait until the DOM is fully loaded
-        document.addEventListener('DOMContentLoaded', function() {
-            // Handle form submission to search for students
-            document.getElementById('skillsForm').addEventListener('submit', function (event) {
-                event.preventDefault();
-                
-                // Get the skill and minimum SGPA entered by the user
-                const skill = document.getElementById('skillsInput').value;
-                const minSgpa = parseFloat(document.getElementById('minSgpaInput').value) || 0;
+        document.addEventListener('DOMContentLoaded', function () {
+    document.getElementById('skillsForm').addEventListener('submit', function (event) {
+        event.preventDefault();
 
-                // Make a POST request to fetch students with the given skill
-                fetch('/students-with-skill', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ skill: skill })
-                })
-                .then(response => response.json())
-                .then(data => {
-                    const studentsBody = document.getElementById('students-body');
-                    studentsBody.innerHTML = ''; // Clear previous results
+        // Get the skill entered by the user
+        const skill = document.getElementById('skillsInput').value;
+        console.log("Searching for skill:", skill); // Debugging log to check skill value
 
-                    if (data.students && data.students.length > 0) {
-                        // Filter students by SGPA and sort in descending order
-                        const filteredStudents = data.students
-                            .filter(student => student.sgpa >= minSgpa)
-                            .sort((a, b) => b.sgpa - a.sgpa);
+        // Make a POST request to fetch students with the given skill
+        fetch('/students-with-skill', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ skill: skill }),
+        })
+        .then((response) => response.json())
+        .then((data) => {
+            console.log(data); // Debugging log to check the returned data
+            const studentsBody = document.getElementById('students-body');
+            studentsBody.innerHTML = ''; // Clear previous results
 
-                        filteredStudents.forEach(student => {
-                            const row = document.createElement('tr');
-                            const studentLink = `<a href="#" class="student-link" data-usn="${student.usn}" style="color: inherit; text-decoration: none;">${student.name}</a>`;
-                            row.innerHTML = `<td>${student.usn}</td><td>${studentLink}</td><td>${student.sgpa}</td>`;
-                            studentsBody.appendChild(row);
-                        });
-
-                        document.getElementById('noStudentsMessage').style.display = 'none';
-                    } else {
-                        document.getElementById('noStudentsMessage').style.display = 'block';
-                    }
-                })
-                .catch(error => console.error('Error:', error));
-            });
-
-            // Event listener for clicking on a student's name to view their skills
-            document.getElementById('studentsTable').addEventListener('click', function(event) {
-                if (event.target && event.target.matches('.student-link')) {
-                    const usn = event.target.getAttribute('data-usn');
-                    displayStudentSkills(usn);
-                }
-            });
-        });
-
-        // Function to fetch and display skills of the selected student
-        function displayStudentSkills(usn) {
-            fetch(`/student-details/${usn}`)
-                .then(response => response.json())
-                .then(data => {
-                    const skillsContainer = document.getElementById('skills-container');
-                    const skillsTableBody = document.getElementById('skillsTableBody');
-                    skillsTableBody.innerHTML = '';  // Clear any previous content
-
-                    if (data.skills && data.skills.length > 0) {
-                        data.skills.forEach(skill => {
-                            const row = document.createElement('tr');
-                            row.innerHTML = `<td>${skill}</td>`;  // Display each skill in a new row
-                            skillsTableBody.appendChild(row);
-                        });
-                        document.getElementById('student-name').innerText = usn;  // You can also show the student's name here if needed
-                        skillsContainer.style.display = 'block';  // Make the skills container visible
-                    } else {
-                        alert('No skills found for this student.');
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);  // Log any errors
+            if (data.students && data.students.length > 0) {
+                // Populate the table with filtered students
+                data.students.forEach((student) => {
+                    const row = document.createElement('tr');
+                    const studentLink = `<a href="#" class="student-link" data-usn="${student.usn}" style="color: inherit; text-decoration: none;">${student.name}</a>`;
+                    row.innerHTML = `<td>${student.usn}</td><td>${studentLink}</td><td>${student.sgpa}</td>`;
+                    studentsBody.appendChild(row);
                 });
-        }
-    </script>
 
+                document.getElementById('noStudentsMessage').style.display = 'none'; // Hide "no students" message
+            } else {
+                document.getElementById('noStudentsMessage').style.display = 'block'; // Show "no students" message
+            }
+        })
+        .catch((error) => console.error('Error:', error));
+    });
+});
+
+
+    </script>
 </body>
 </html>

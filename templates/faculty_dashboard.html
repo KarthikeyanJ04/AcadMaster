@@ -6,7 +6,6 @@
     <title>Upload Student Results PDFs</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
     <style>
-       
         body {
             margin: 0;
             font-family: 'Poppins', sans-serif;
@@ -86,13 +85,11 @@
         #export-btn {
             display: none; /* Initially hidden */
         }
-    
 
         input[type="file"] {
             display: none; /* Hide the default file input */
         }
 
-        /* Add any additional styles if needed */
         #result-analysis-table {
             margin-left: auto;
             margin-right: auto;
@@ -182,6 +179,7 @@
                 formData.append('pdf_files', files[i]);
             }
 
+            // Change endpoint to '/upload-results' as per the backend update
             const response = await fetch('/process-pdfs', {
                 method: 'POST',
                 body: formData
@@ -245,25 +243,32 @@
 
         // Display Result Analysis
         function displayResultAnalysis(data) {
-            const tableBody = document.getElementById('result-analysis-body');
-            tableBody.innerHTML = '';  // Clear previous result analysis data
+    const tableBody = document.getElementById('result-analysis-body');
+    tableBody.innerHTML = '';  // Clear previous result analysis data
 
-            data.forEach(item => {
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td>${item.subject_code || 'N/A'}</td>
-                    <td>${item.subject_name || 'N/A'}</td>
-                    <td>${item.internal_marks !== null ? item.internal_marks : 'N/A'}</td>
-                    <td>${item.external_marks !== null ? item.external_marks : 'N/A'}</td>
-                    <td>${item.total_marks !== null ? item.total_marks : 'N/A'}</td>
-                    <td>${item.pass_fail_status || 'N/A'}</td>
-                `;
-                tableBody.appendChild(row);
-            });
+    // Skip the first item in the data (if it's a header row or anything you want to ignore)
+    // Start adding the result rows from the second item in the data (i.e., data[1] onwards)
+    data.forEach((item, index) => {
+        // Skip the first row (index 0) - if you want to ignore it
+        if (index === 0) return;
 
-            // Show the result analysis table
-            document.getElementById('result-analysis-table').style.display = 'table';
-        }
+        // Create a new row for each result analysis data
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${item.subject_code || 'N/A'}</td>
+            <td>${item.subject_name || 'N/A'}</td>
+            <td>${item.internal_marks !== null ? item.internal_marks : 'N/A'}</td>
+            <td>${item.external_marks !== null ? item.external_marks : 'N/A'}</td>
+            <td>${item.total_marks !== null ? item.total_marks : 'N/A'}</td>
+            <td>${item.pass_fail_status || 'N/A'}</td>
+        `;
+        tableBody.appendChild(row);
+    });
+
+    // Ensure the result analysis table is shown
+    document.getElementById('result-analysis-table').style.display = 'table';
+}
+
 
         // Fetch students data (example)
         document.getElementById('view-students').addEventListener('click', async function () {
@@ -277,36 +282,35 @@
         });
 
         function renderStudentsTable(data) {
-    const tableBody = document.getElementById('table-body');
-    const resultTable = document.getElementById('result-table');
+            const tableBody = document.getElementById('table-body');
+            const resultTable = document.getElementById('result-table');
 
-    tableBody.innerHTML = ''; // Clear any previous results
+            tableBody.innerHTML = ''; // Clear any previous results
 
-    if (!data || data.length === 0) {
-        tableBody.innerHTML = `
-            <tr>
-                <td colspan="3" style="text-align: center;">No students found</td>
-            </tr>
-        `;
-        resultTable.style.display = 'table';
-        return;
-    }
+            if (!data || data.length === 0) {
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="3" style="text-align: center;">No students found</td>
+                    </tr>
+                `;
+                resultTable.style.display = 'table';
+                return;
+            }
 
-    data.forEach(student => {
-        const row = document.createElement('tr');
-        row.innerHTML = `
-            <td>
-                <a href="/enter-skills/${student.USN}" class="student-name">${student.student_name || 'N/A'}</a>
-            </td> <!-- Make the student_name a clickable link -->
-            <td>${student.USN || 'N/A'}</td> <!-- USN field -->
-            <td>${student.SGPA !== null ? student.SGPA : 'N/A'}</td> <!-- SGPA field -->
-        `;
-        tableBody.appendChild(row);
-    });
+            data.forEach(student => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>
+                        <a href="/enter-skills/${student.USN}" class="student-name">${student.student_name || 'N/A'}</a>
+                    </td> <!-- Make the student_name a clickable link -->
+                    <td>${student.USN || 'N/A'}</td> <!-- USN field -->
+                    <td>${student.SGPA !== null ? student.SGPA : 'N/A'}</td> <!-- SGPA field -->
+                `;
+                tableBody.appendChild(row);
+            });
 
-    resultTable.style.display = 'table'; // Show the table after populating data
-}
-
+            resultTable.style.display = 'table'; // Show the table after populating data
+        }
     </script>
 </body>
 </html>

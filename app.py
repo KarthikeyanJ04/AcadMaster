@@ -337,55 +337,7 @@ def create_result_analysis_table():
         conn.close()
 
 # Function to insert the extracted data into result_analysis table
-def insert_data_into_result_analysis(data):
-    try:
-        # Create the table if it doesn't exist
-        create_result_analysis_table()
 
-        # Connect to the database
-        conn = get_db_connection()
-        cursor = conn.cursor()
-
-        # Insert student info and subjects into the result_analysis table
-        for subject in data["subjects"]:
-            subject_code = subject["subject_code"]
-            subject_name = subject["subject_name"]
-            internal_marks = subject["internal_marks"]
-            external_marks = subject["external_marks"]
-            total_marks = subject["total_marks"]
-            pass_fail_status = subject["pass_fail_status"]
-
-            # Insert data into the table
-            insert_query = """
-            INSERT INTO result_analysis (
-                student_name,
-                university_seat_number,
-                subject_code,
-                subject_name,
-                internal_marks,
-                external_marks,
-                total_marks,
-                pass_fail_status
-            )
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s);
-            """
-            cursor.execute(insert_query, (
-                data["Student Name"],
-                data["University Seat Number"],
-                subject_code,
-                subject_name,
-                internal_marks,
-                external_marks,
-                total_marks,
-                pass_fail_status
-            ))
-
-        conn.commit()
-        print(f"Data for student {data['Student Name']} inserted successfully.")
-    except Exception as e:
-        print(f"Error inserting data: {e}")
-    finally:
-        conn.close()
 
 # Example function to extract relevant data from PDF
 def extract_and_insert_data(pdf_file):
@@ -1078,6 +1030,94 @@ def get_result_analysis():
     finally:
         conn.close()
 
+
+
+# Define the function to insert data into the database
+def insert_data_into_result_analysis(data):
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        # Ensure the table exists
+        create_table_query = """
+        CREATE TABLE IF NOT EXISTS result_analysis (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            student_name VARCHAR(255),
+            university_seat_number VARCHAR(50),
+            subject_code VARCHAR(50),
+            subject_name VARCHAR(255),
+            internal_marks INT,
+            external_marks INT,
+            total_marks INT,
+            pass_fail_status VARCHAR(50)
+        );
+        """
+        cursor.execute(create_table_query)
+
+        for subject in data["subjects"]:
+            cursor.execute("""
+                INSERT INTO result_analysis (student_name, university_seat_number, subject_code, 
+                subject_name, internal_marks, external_marks, total_marks, pass_fail_status) 
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            """, (
+                data["Student Name"],
+                data["University Seat Number"],
+                subject["subject_code"],
+                subject["subject_name"],
+                subject["internal_marks"],
+                subject["external_marks"],
+                subject["total_marks"],
+                subject["pass_fail_status"]
+            ))
+
+        conn.commit()
+    except Exception as e:
+        print(f"Error inserting data: {e}")
+    finally:
+        conn.close()
+
+# Define the new PDF processing route
+@app.route('/upload-results', methods=['POST'])
+def upload_results():
+    if 'pdf_files' not in request.files:
+        return jsonify({"error": "No PDF files uploaded"}), 400
+    
+    files = request.files.getlist('pdf_files')
+    result_data = []
+
+    for file in files:
+        # Process each PDF file
+        with pdfplumber.open(file) as pdf:
+            data = {"Student Name": None, "University Seat Number": None, "subjects": []}
+
+            # Extract data from the PDF (assuming this structure)
+            for page in pdf.pages:
+                tables = page.extract_tables()
+                for table in tables:
+                    for row in table:
+                        if len(row) >= 6:  # Check the number of columns in each row
+                            subject_code = row[0].strip()
+                            subject_name = row[1].strip()
+                            internal_marks = int(row[2].strip()) if row[2].strip().isdigit() else 0
+                            external_marks = int(row[3].strip()) if row[3].strip().isdigit() else 0
+                            total_marks = int(row[4].strip()) if row[4].strip().isdigit() else 0
+                            pass_fail_status = row[5].strip()
+
+                            data["subjects"].append({
+                                "subject_code": subject_code,
+                                "subject_name": subject_name,
+                                "internal_marks": internal_marks,
+                                "external_marks": external_marks,
+                                "total_marks": total_marks,
+                                "pass_fail_status": pass_fail_status
+                            })
+            
+            result_data.append(data)
+
+            # Insert extracted data into the database
+            insert_data_into_result_analysis(data)
+
+    return jsonify(result_data)
 
 
 

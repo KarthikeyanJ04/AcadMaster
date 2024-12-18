@@ -294,6 +294,145 @@ def extract_specific_info_from_pdf(pdf_file):
 
     
 
+import pymysql
+import pdfplumber
+
+# Connect to your MySQL database
+def get_db_connection():
+    return pymysql.connect(
+        host="localhost",
+        user="root",       
+        passwd="jaikarthik",     
+        db="user_data",    
+    )
+
+# Create the result_analysis table if it doesn't exist
+def create_result_analysis_table():
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        # SQL to create the table if it doesn't exist
+        create_table_query = """
+        CREATE TABLE IF NOT EXISTS result_analysis (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            student_name VARCHAR(255),
+            university_seat_number VARCHAR(50),
+            subject_code VARCHAR(50),
+            subject_name VARCHAR(255),
+            internal_marks INT,
+            external_marks INT,
+            total_marks INT,
+            pass_fail_status VARCHAR(50)
+        );
+        """
+
+        cursor.execute(create_table_query)
+        conn.commit()
+        print("Table 'result_analysis' created or already exists.")
+
+    except Exception as e:
+        print(f"Error creating table: {e}")
+    finally:
+        conn.close()
+
+# Function to insert the extracted data into result_analysis table
+def insert_data_into_result_analysis(data):
+    try:
+        # Create the table if it doesn't exist
+        create_result_analysis_table()
+
+        # Connect to the database
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        # Insert student info and subjects into the result_analysis table
+        for subject in data["subjects"]:
+            subject_code = subject["subject_code"]
+            subject_name = subject["subject_name"]
+            internal_marks = subject["internal_marks"]
+            external_marks = subject["external_marks"]
+            total_marks = subject["total_marks"]
+            pass_fail_status = subject["pass_fail_status"]
+
+            # Insert data into the table
+            insert_query = """
+            INSERT INTO result_analysis (
+                student_name,
+                university_seat_number,
+                subject_code,
+                subject_name,
+                internal_marks,
+                external_marks,
+                total_marks,
+                pass_fail_status
+            )
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s);
+            """
+            cursor.execute(insert_query, (
+                data["Student Name"],
+                data["University Seat Number"],
+                subject_code,
+                subject_name,
+                internal_marks,
+                external_marks,
+                total_marks,
+                pass_fail_status
+            ))
+
+        conn.commit()
+        print(f"Data for student {data['Student Name']} inserted successfully.")
+    except Exception as e:
+        print(f"Error inserting data: {e}")
+    finally:
+        conn.close()
+
+# Example function to extract relevant data from PDF
+def extract_and_insert_data(pdf_file):
+    data = {"Student Name": None, "University Seat Number": None, "subjects": []}
+    try:
+        with pdfplumber.open(pdf_file) as pdf:
+            print("Opened PDF file successfully")
+            for page_number, page in enumerate(pdf.pages, start=1):
+                print(f"Processing page {page_number}")
+                tables = page.extract_tables()
+                for table_number, table in enumerate(tables, start=1):
+                    print(f"Processing table {table_number} on page {page_number}")
+
+                    # Assuming the structure has subject code, name, internal, external, total, pass/fail
+                    if len(table[0]) >= 6:  # Check if table has at least 6 columns
+                        for row in table:
+                            if len(row) >= 6 and row[0].strip() and row[1].strip():
+                                subject_code = row[0].strip()
+                                subject_name = row[1].strip()
+                                try:
+                                    internal_marks = int(row[2].strip()) if row[2].strip().isdigit() else 0
+                                    external_marks = int(row[3].strip()) if row[3].strip().isdigit() else 0
+                                    total_marks = int(row[4].strip()) if row[4].strip().isdigit() else 0
+                                except ValueError:
+                                    internal_marks = external_marks = total_marks = 0  # Default to 0 if not valid
+
+                                pass_fail_status = row[5].strip()
+
+                                # Store the extracted data
+                                data["subjects"].append({
+                                    "subject_code": subject_code,
+                                    "subject_name": subject_name,
+                                    "internal_marks": internal_marks,
+                                    "external_marks": external_marks,
+                                    "total_marks": total_marks,
+                                    "pass_fail_status": pass_fail_status
+                                })
+                                print(f"Extracted subject - Code: {subject_code}, Name: {subject_name}, Internal: {internal_marks}, External: {external_marks}, Total: {total_marks}, Pass/Fail: {pass_fail_status}")
+
+    except Exception as e:
+        print(f"Error extracting data: {e}")
+
+    print("Extraction complete")
+
+    # Insert the extracted data into the database
+    insert_data_into_result_analysis(data)
+
 
 
 # Send OTP to the user's email
@@ -926,7 +1065,18 @@ def get_skills(student_usn):
 
 
 
-
+@app.route('/get-result-analysis', methods=['GET'])
+def get_result_analysis():
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(pymysql.cursors.DictCursor)  # To fetch data as dictionaries
+        cursor.execute("SELECT * FROM result_analysis")
+        result = cursor.fetchall()
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'error': str(e)})
+    finally:
+        conn.close()
 
 
 

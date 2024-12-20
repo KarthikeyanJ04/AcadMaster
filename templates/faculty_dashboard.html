@@ -126,7 +126,7 @@
         <button id="view-students">View Students</button>
 
         <!-- New Result Analysis Button -->
-        <button id="result-analysis-btn">Result Analysis</button>
+        <button id="result-analysis-btn" onclick="window.location.href='/result-analysis'">Result Analysis</button>
 
         <!-- Results Table -->
         <table id="result-table">
@@ -144,10 +144,8 @@
         <table id="result-analysis-table">
             <thead>
                 <tr>
+                    <th>Student Name</th>
                     <th>Subject Code</th>
-                    <th>Subject Name</th>
-                    <th>Internal Marks</th>
-                    <th>External Marks</th>
                     <th>Total Marks</th>
                     <th>Pass/Fail</th>
                 </tr>
@@ -231,36 +229,60 @@
         });
 
         // Fetch Result Analysis from the server
-        document.getElementById('result-analysis-btn').addEventListener('click', async function () {
-            try {
-                const response = await fetch('/get-result-analysis'); // Endpoint for Result Analysis
-                const data = await response.json();
-                displayResultAnalysis(data);
-            } catch (error) {
-                console.error('Error fetching result analysis:', error);
-            }
-        });
+        // Fetch Result Analysis from the server
+document.getElementById('result-analysis-btn').addEventListener('click', async function () {
+    try {
+        const response = await fetch('/get-result-analysis'); // Endpoint for Result Analysis
+        const data = await response.json();
+        displayResultAnalysis(data);
+    } catch (error) {
+        console.error('Error fetching result analysis:', error);
+    }
+});
 
-        // Display Result Analysis
-        function displayResultAnalysis(data) {
+// Display Result Analysis
+function displayResultAnalysis(data) {
     const tableBody = document.getElementById('result-analysis-body');
     tableBody.innerHTML = '';  // Clear previous result analysis data
 
-    // Skip the first item in the data (if it's a header row or anything you want to ignore)
-    // Start adding the result rows from the second item in the data (i.e., data[1] onwards)
-    data.forEach((item, index) => {
-        // Skip the first row (index 0) - if you want to ignore it
-        if (index === 0) return;
+    // Ensure we have valid data
+    if (!data || data.length === 0) {
+        tableBody.innerHTML = `
+            <tr>
+                <td colspan="4" style="text-align: center;">No result analysis data found</td>
+            </tr>
+        `;
+        document.getElementById('result-analysis-table').style.display = 'table';
+        return;
+    }
 
-        // Create a new row for each result analysis data
+    // Get unique students
+    const uniqueStudents = [...new Set(data.map(item => item.student_name))];
+    
+    // Get unique subjects
+    const subjects = [...new Set(data.map(item => item.subject_code))];
+
+    // Create headers for the result analysis table
+    const headerRow = document.createElement('tr');
+    headerRow.innerHTML = `
+        <th>Student Name</th>
+        ${subjects.map(subject => `<th>${subject}</th>`).join('')}
+        <th>Pass/Fail</th>
+    `;
+    tableBody.appendChild(headerRow);
+
+    // Add rows for each student
+    uniqueStudents.forEach(studentName => {
+        const studentData = data.filter(item => item.student_name === studentName);
+
         const row = document.createElement('tr');
         row.innerHTML = `
-            <td>${item.subject_code || 'N/A'}</td>
-            <td>${item.subject_name || 'N/A'}</td>
-            <td>${item.internal_marks !== null ? item.internal_marks : 'N/A'}</td>
-            <td>${item.external_marks !== null ? item.external_marks : 'N/A'}</td>
-            <td>${item.total_marks !== null ? item.total_marks : 'N/A'}</td>
-            <td>${item.pass_fail_status || 'N/A'}</td>
+            <td>${studentName || 'N/A'}</td>
+            ${subjects.map(subject => {
+                const subjectData = studentData.filter(item => item.subject_code === subject);
+                return `<td>${subjectData.length > 0 ? subjectData[0].total_marks : 'N/A'}</td>`;
+            }).join('')}
+            <td>${studentData.length > 0 && studentData[0].pass_fail_status ? studentData[0].pass_fail_status : 'N/A'}</td>
         `;
         tableBody.appendChild(row);
     });
@@ -269,6 +291,7 @@
     document.getElementById('result-analysis-table').style.display = 'table';
 }
 
+        
 
         // Fetch students data (example)
         document.getElementById('view-students').addEventListener('click', async function () {

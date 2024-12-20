@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Result Analysis</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Poppins', sans-serif;
+            background-color: #1a1a2e;
+            color: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            flex-direction: column;
+        }
+
+        h1 {
+            margin-bottom: 20px;
+            font-size: 2.5rem;
+        }
+
+        .container {
+            width: 80%;
+            max-width: 1200px;
+            background-color: rgba(0, 0, 0, 0.7);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 12px;
+            border: 1px solid #fff;
+            text-align: center;
+        }
+
+        th {
+            background-color: #333;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            background-color: #444;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 20px;
+            font-size: 1rem;
+        }
+
+        .btn:hover {
+            background-color: #555;
+        }
+
+        #result-table {
+            margin-top: 30px;
+            width: 100%;
+        }
+
+        input[type="file"] {
+            margin-top: 20px;
+        }
+
+    </style>
+</head>
+<body>
+
+    <h1>Result Analysis</h1>
+
+    <div class="container">
+        <!-- File upload form -->
+        <form id="pdf-upload-form" enctype="multipart/form-data">
+            <input type="file" name="pdf_file" id="pdf-file-input" accept=".pdf" required>
+            <button type="submit" class="btn">Upload PDF</button>
+        </form>
+
+        <!-- Result Analysis Table -->
+        <table id="result-table">
+            <thead>
+                <tr id="subject-headers">
+                    <!-- Subject Codes will be added dynamically here -->
+                </tr>
+            </thead>
+            <tbody id="result-analysis-body">
+                <!-- Data will be dynamically inserted here -->
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        // Fetch result analysis data when the page is loaded
+       // Fetch result analysis data when the page is loaded
+document.addEventListener('DOMContentLoaded', async function() {
+    const response = await fetch('/upload-results');
+    const data = await response.json();
+    displayResultAnalysis(data);
+});
+
+function displayResultAnalysis(data) {
+    const tableBody = document.getElementById('result-analysis-body');
+    const headersRow = document.getElementById('subject-headers');
+    tableBody.innerHTML = '';  // Clear previous result analysis data
+    headersRow.innerHTML = ''; // Clear previous headers
+
+    if (!data || Object.keys(data).length === 0) {
+        tableBody.innerHTML = `
+            <tr>
+                <td colspan="100%" style="text-align: center;">No result analysis data found</td>
+            </tr>
+        `;
+        return;
+    }
+
+    // Add subject codes as table headers
+    data.forEach((entry, index) => {
+        const th = document.createElement('th');
+        th.innerText = entry.subject_code; // Assuming subject_code is in the data
+        headersRow.appendChild(th);
+    });
+
+    // Create a map to store student rows
+    const studentRows = {};
+
+    // Prepare the table rows based on the subject data
+    data.forEach(entry => {
+        if (!studentRows[entry.usn]) {
+            studentRows[entry.usn] = {
+                student_name: entry.student_name,
+                usn: entry.usn,
+                marks: {}
+            };
+        }
+        studentRows[entry.usn].marks[entry.subject_code] = entry.total_marks;
+    });
+
+    // Create table rows for students
+    Object.keys(studentRows).forEach(usn => {
+        const student = studentRows[usn];
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${student.student_name}</td>
+            <td>${student.usn}</td>
+            ${Object.keys(student.marks).map(subject_code => `
+                <td>${student.marks[subject_code] || 'N/A'}</td>
+            `).join('')}
+        `;
+        tableBody.appendChild(row);
+    });
+}
+
+// Handle PDF file upload
+document.getElementById('pdf-upload-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const formData = new FormData();
+    const pdfFile = document.getElementById('pdf-file-input').files[0];
+    formData.append('pdf_file', pdfFile);
+
+    const response = await fetch('/result-analysis', {
+        method: 'POST',
+        body: formData
+    });
+
+    const result = await response.json();
+    alert(result.message);
+
+    // Refresh the table after successful upload
+    if (response.ok) {
+        const data = await fetch('/upload-results');
+        const resultData = await data.json();
+        displayResultAnalysis(resultData);
+    }
+});
+
+    </script>
+
+</body>
+</html>

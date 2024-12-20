@@ -100,9 +100,19 @@ def initialize_database():
             usn VARCHAR(20), skills TEXT, PRIMARY KEY (usn), FOREIGN KEY (usn) REFERENCES subject_sgpa(USN))""")
 
 
-            cursor.execute("""CREATE TABLE IF NOT exists students_sgpa (
+            cursor.execute("""CREATE TABLE IF NOT exists student_sgpa (
+            S.No INT,
             USN VARCHAR(50) PRIMARY KEY,
-            student_name VARCHAR(255) NOT NULL,
+            student_name VARCHAR(255),
+            BCS401 INT, 
+            BCS402 INT,
+            BCS403 INT,
+            BCSL404 INT,
+            BBOC407 INT,
+            BUHK408 INT,
+            BPEK459 INT,
+            BCS405A INT,
+            BCS456C INT,
             SGPA FLOAT)""")
 
             create_table_query = """
@@ -207,9 +217,22 @@ def get_subject_credits(subject_code):
         connection.close()
 
 def extract_specific_info_from_pdf(pdf_file):
+    connection = MySQLdb.connect(
+        host='localhost',
+        user='root',
+        password='jaikarthik',
+        database='user_data'
+    )
+    cursor = connection.cursor()
+    
+    global U_S_N
+    row_index = 0
+    
     data = {"Student Name": None, "University Seat Number": None, "subjects": []}
     Total = 0
     credit = 0
+    SGPA = 0  # Start with a default SGPA value
+
     try:
         with pdfplumber.open(pdf_file) as pdf:
             print("Opened PDF file successfully")
@@ -218,32 +241,69 @@ def extract_specific_info_from_pdf(pdf_file):
                 tables = page.extract_tables()
                 for table_number, table in enumerate(tables, start=1):
                     print(f"Processing table {table_number} on page {page_number}")
-
+                    itt = 0
                     if len(table[0]) == 2:
                         for row in table:
                             if "Student Name" in row[0]:
                                 data["Student Name"] = row[1].strip().replace(":", "").strip()
                                 print(f"Extracted Student Name: {data['Student Name']}")
+                                
                             if "University Seat Number" in row[0]:
+                                University_Seat_Number = row[1].strip().replace(":", "").strip()
+                                U_S_N = University_Seat_Number
                                 data["University Seat Number"] = row[1].strip().replace(":", "").strip()
                                 print(f"Extracted University Seat Number: {data['University Seat Number']}")
+                                
+                    itt += 1
+                    if len(table[0]) >= 3:
+                        for row_index, row in enumerate(table):
+                            if row_index == 0:
+                                continue  # Skip the first row (headers)
 
-                    elif len(table[0]) >= 3:
-                        for row in table:
                             if len(row) >= 3 and row[0].strip() and row[1].strip() and row[2].strip():
                                 subject_code = row[0].strip()
                                 subject_name = row[1].strip()
                                 total_marks = row[4].strip()
 
-                                # Fetch the credits for the subject
+                                # Step 1: Check if the student (USN) already exists in the table
+                                cursor.execute("SELECT * FROM student_sgpa WHERE USN = %s", (U_S_N,))
+                                student_exists = cursor.fetchone()
+
+                                if not student_exists:
+                                    # Insert the student if they don't already exist
+                                    cursor.execute(
+                                        "INSERT INTO student_sgpa (USN, student_name) VALUES (%s, %s)",
+                                        (U_S_N, data["Student Name"])
+                                    )
+                                    connection.commit()
+                                    print(f"Inserted student {data['Student Name']} with USN {U_S_N}.")
+
+                                # Step 2: Check if the subject column exists for the subject
+                                cursor.execute("SHOW COLUMNS FROM student_sgpa LIKE %s", (subject_code,))
+                                column_exists = cursor.fetchone()
+
+                                if not column_exists:
+                                    # Handle the case when the subject column does not exist
+                                    print(f"Column '{subject_code}' does not exist. Skipping this subject or handling it.")
+                                    # Option 1: Skip inserting marks for this subject
+                                    continue
+                                    # Option 2: Optionally, create the subject column (only if allowed)
+                                    # cursor.execute(f"ALTER TABLE student_sgpa ADD COLUMN `{subject_code}` INT")
+                                    # connection.commit()
+
+                                # Step 3: Insert or update marks for the subject
+                                update_query = f"UPDATE student_sgpa SET `{subject_code}` = %s WHERE USN = %s"
+                                cursor.execute(update_query, (total_marks, U_S_N))
+                                connection.commit()  # Commit after each update
+                                print(f"Updated {subject_code} for student with USN {U_S_N} to {total_marks}.")
+
+                                # Step 4: Process credits and calculate total points
                                 credits = get_subject_credits(subject_code)
                                 
-                                # Ensure that credits are an integer, and if not, handle gracefully
                                 if not isinstance(credits, int) or credits <= 0:
                                     print(f"Invalid or missing credits for subject {subject_code}. Skipping.")
                                     continue
 
-                                # Ensure total_marks is an integer
                                 try:
                                     total_marks_int = int(total_marks)
                                     if 50 <= total_marks_int <= 59:
@@ -257,11 +317,10 @@ def extract_specific_info_from_pdf(pdf_file):
                                     elif 90 <= total_marks_int <= 100:
                                         grader = 10
                                     else:
-                                        grader = None  # Marks out of range or invalid
+                                        grader = None
                                 except ValueError:
-                                    grader = None  # In case total_marks is not a valid number
+                                    grader = None
 
-                                # If grader is valid, multiply by credits
                                 if grader is not None:
                                     total_points = grader * credits
                                     data["subjects"].append({
@@ -272,24 +331,39 @@ def extract_specific_info_from_pdf(pdf_file):
                                         "credits": credits,
                                         "total_points": total_points
                                     })
-                                    print(f"Extracted subject - Code: {subject_code}, Name: {subject_name}, Marks: {total_marks}, Grader: {grader}, Credits: {credits}, Total Points: {total_points}")
 
-                                    Total = Total + total_points
-                                    credit = credit + credits
-                                    
+                                    Total += total_points
+                                    credit += credits
                                 else:
                                     print(f"Invalid grader for subject {subject_code}. Skipping.")
+
+        # Step 5: Calculate SGPA
+        if credit > 0:
+            SGPA = Total / credit
+            SGPA = round(SGPA, 2)
+            print("SGPA:", SGPA)
+        else:
+            SGPA = 0
+            print("No valid marks or credits, SGPA is set to 0.")
+
+        # Step 6: Insert SGPA into the database
+        cursor.execute(
+            "UPDATE student_sgpa SET SGPA = %s WHERE USN = %s",
+            (SGPA, U_S_N)
+        )
+        connection.commit()  # Commit after inserting SGPA
+
     except Exception as e:
         print(f"Error extracting data: {e}")
 
     print("Extraction complete")
     print("Total points:", Total)
-    
-    SGPA = Total / credit
-    SGPA = round(SGPA, 2)
     print("SGPA:", SGPA)
-    
-    return data, SGPA  # Ensure we return both data and SGPA as expected.
+
+    return data, SGPA
+
+
+
 
 
     
@@ -340,50 +414,7 @@ def create_result_analysis_table():
 
 
 # Example function to extract relevant data from PDF
-def extract_and_insert_data(pdf_file):
-    data = {"Student Name": None, "University Seat Number": None, "subjects": []}
-    try:
-        with pdfplumber.open(pdf_file) as pdf:
-            print("Opened PDF file successfully")
-            for page_number, page in enumerate(pdf.pages, start=1):
-                print(f"Processing page {page_number}")
-                tables = page.extract_tables()
-                for table_number, table in enumerate(tables, start=1):
-                    print(f"Processing table {table_number} on page {page_number}")
 
-                    # Assuming the structure has subject code, name, internal, external, total, pass/fail
-                    if len(table[0]) >= 6:  # Check if table has at least 6 columns
-                        for row in table:
-                            if len(row) >= 6 and row[0].strip() and row[1].strip():
-                                subject_code = row[0].strip()
-                                subject_name = row[1].strip()
-                                try:
-                                    internal_marks = int(row[2].strip()) if row[2].strip().isdigit() else 0
-                                    external_marks = int(row[3].strip()) if row[3].strip().isdigit() else 0
-                                    total_marks = int(row[4].strip()) if row[4].strip().isdigit() else 0
-                                except ValueError:
-                                    internal_marks = external_marks = total_marks = 0  # Default to 0 if not valid
-
-                                pass_fail_status = row[5].strip()
-
-                                # Store the extracted data
-                                data["subjects"].append({
-                                    "subject_code": subject_code,
-                                    "subject_name": subject_name,
-                                    "internal_marks": internal_marks,
-                                    "external_marks": external_marks,
-                                    "total_marks": total_marks,
-                                    "pass_fail_status": pass_fail_status
-                                })
-                                print(f"Extracted subject - Code: {subject_code}, Name: {subject_name}, Internal: {internal_marks}, External: {external_marks}, Total: {total_marks}, Pass/Fail: {pass_fail_status}")
-
-    except Exception as e:
-        print(f"Error extracting data: {e}")
-
-    print("Extraction complete")
-
-    # Insert the extracted data into the database
-    insert_data_into_result_analysis(data)
 
 
 
@@ -1017,107 +1048,99 @@ def get_skills(student_usn):
 
 
 
-@app.route('/get-result-analysis', methods=['GET'])
-def get_result_analysis():
-    try:
-        conn = get_db_connection()
-        cursor = conn.cursor(pymysql.cursors.DictCursor)  # To fetch data as dictionaries
-        cursor.execute("SELECT * FROM result_analysis")
-        result = cursor.fetchall()
-        return jsonify(result)
-    except Exception as e:
-        return jsonify({'error': str(e)})
-    finally:
-        conn.close()
 
 
 
-# Define the function to insert data into the database
-def insert_data_into_result_analysis(data):
-    try:
-        conn = get_db_connection()
-        cursor = conn.cursor()
 
-        # Ensure the table exists
-        create_table_query = """
-        CREATE TABLE IF NOT EXISTS result_analysis (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            student_name VARCHAR(255),
-            university_seat_number VARCHAR(50),
-            subject_code VARCHAR(50),
-            subject_name VARCHAR(255),
-            internal_marks INT,
-            external_marks INT,
-            total_marks INT,
-            pass_fail_status VARCHAR(50)
-        );
-        """
-        cursor.execute(create_table_query)
 
-        for subject in data["subjects"]:
-            cursor.execute("""
-                INSERT INTO result_analysis (student_name, university_seat_number, subject_code, 
-                subject_name, internal_marks, external_marks, total_marks, pass_fail_status) 
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-            """, (
-                data["Student Name"],
-                data["University Seat Number"],
-                subject["subject_code"],
-                subject["subject_name"],
-                subject["internal_marks"],
-                subject["external_marks"],
-                subject["total_marks"],
-                subject["pass_fail_status"]
-            ))
-
-        conn.commit()
-    except Exception as e:
-        print(f"Error inserting data: {e}")
-    finally:
-        conn.close()
 
 # Define the new PDF processing route
-@app.route('/upload-results', methods=['POST'])
-def upload_results():
-    if 'pdf_files' not in request.files:
-        return jsonify({"error": "No PDF files uploaded"}), 400
-    
-    files = request.files.getlist('pdf_files')
-    result_data = []
-
-    for file in files:
-        # Process each PDF file
+@app.route('/result-analysis', methods=['GET', 'POST'])
+def result_analysis():
+    if request.method == 'POST':
+        if 'pdf_file' not in request.files:
+            return jsonify({"error": "No PDF file uploaded"}), 400
+        
+        file = request.files['pdf_file']
+        
+        # Connect to the database
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # Parse the PDF
         with pdfplumber.open(file) as pdf:
             data = {"Student Name": None, "University Seat Number": None, "subjects": []}
 
-            # Extract data from the PDF (assuming this structure)
+            # Extract student name and USN (University Seat Number)
             for page in pdf.pages:
                 tables = page.extract_tables()
                 for table in tables:
                     for row in table:
-                        if len(row) >= 6:  # Check the number of columns in each row
-                            subject_code = row[0].strip()
-                            subject_name = row[1].strip()
-                            internal_marks = int(row[2].strip()) if row[2].strip().isdigit() else 0
-                            external_marks = int(row[3].strip()) if row[3].strip().isdigit() else 0
+                        if len(row) >= 2:  # Ensure row has at least two columns
+                            if "Student Name" in row[0]:
+                                a = row[1].strip().replace(":", "").strip()
+                                data["Student Name"] = a
+                                cursor.execute(
+                                    "INSERT INTO student_subject_results (student_name) VALUES (%s)",
+                                    (a)
+                                )
+                                print(f"Extracted Student Name: {data['Student Name']}")
+                            if "University Seat Number" in row[0]:
+                                b = row[1].strip().replace(":", "").strip()
+                                data["University Seat Number"] = b
+                                cursor.execute(
+                                    "INSERT INTO student_subject_results (usn) VALUES (%s)",
+                                    (b)
+                                )
+                                print(f"Extracted University Seat Number: {data['University Seat Number']}")
+                                
+                                # Insert student name and USN into the database
+                                
+
+            # Extract subject and marks details
+            for page in pdf.pages:
+                tables = page.extract_tables()
+                for table in tables:
+                    for row in table:
+                        if len(row) >= 6:  # Ensure row has enough columns for subject details
+                            g = row[4].strip()
                             total_marks = int(row[4].strip()) if row[4].strip().isdigit() else 0
-                            pass_fail_status = row[5].strip()
-
+                            
+                            # Insert subject marks into the database
+                            cursor.execute(
+                                "INSERT INTO student_subject_results ({g}) VALUES (%d)",
+                                (g)
+                            )
                             data["subjects"].append({
-                                "subject_code": subject_code,
-                                "subject_name": subject_name,
-                                "internal_marks": internal_marks,
-                                "external_marks": external_marks,
+                                "subject_code": g,
                                 "total_marks": total_marks,
-                                "pass_fail_status": pass_fail_status
                             })
-            
-            result_data.append(data)
 
-            # Insert extracted data into the database
-            insert_data_into_result_analysis(data)
+        # Commit the changes and close the database connection
+        conn.commit()
+        cursor.close()
+        conn.close()
 
-    return jsonify(result_data)
+        return jsonify({"message": "PDF successfully uploaded and results stored."})
+    
+    # For GET requests, render the HTML template
+    return render_template('result_analysis.html')
+
+
+@app.route('/upload-results', methods=['GET'])
+def upload_results():
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    # Fetch all results from the database
+    cursor.execute("SELECT * FROM student_subject_results")
+    results = cursor.fetchall()
+
+    cursor.close()
+    conn.close()
+
+    return jsonify(results)
+
 
 
 
